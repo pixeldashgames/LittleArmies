@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://bqwo27tr7jhlf"]
+
+[ext_resource type="ArrayMesh" uid="uid://cyofur41yukfp" path="res://art/terrain/hex_water_detail.obj" id="1_mqmll"]
+
+[node name="HexWaterDetail" type="MeshInstance3D"]
+gi_mode = 2
+mesh = ExtResource("1_mqmll")

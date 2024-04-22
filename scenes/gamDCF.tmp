@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://bwro3su7uu5nc"]
+
+[ext_resource type="PackedScene" uid="uid://cmb1sw3nnmtwu" path="res://scenes/game_map.tscn" id="1_85pqf"]
+[ext_resource type="Script" path="res://scripts/game_controller.gd" id="1_ceaui"]
+[ext_resource type="PackedScene" uid="uid://b06ng7y7f40hy" path="res://scenes/random_unit.tscn" id="2_cmoyu"]
+
+[node name="Game" type="Node3D"]
+script = ExtResource("1_ceaui")
+morale_starting_values = Array[float]([1.0, 0.9, 0.8, 0.7])
+count_starting_values = Array[int]([20, 25, 50, 10, 35])
+medicine_starting_values = Array[int]([20])
+food_starting_values = Array[int]([200])
+unit_scene = ExtResource("2_cmoyu")
+teams_unit_counts = null
+
+[node name="GameMap" parent="." instance=ExtResource("1_85pqf")]
+
+[node name="Units" type="Node3D" parent="."]

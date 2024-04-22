@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b0ydg5i3tn3bj"
+path="res://.godot/imported/hex_sand_roadE.obj-c673fbb648c6493fba341fbb0474c22c.mesh"
+
+[deps]
+
+files=["res://.godot/imported/hex_sand_roadE.obj-c673fbb648c6493fba341fbb0474c22c.mesh"]
+
+source_file="res://art/terrain/hex_sand_roadE.obj"
+dest_files=["res://.godot/imported/hex_sand_roadE.obj-c673fbb648c6493fba341fbb0474c22c.mesh", "res://.godot/imported/hex_sand_roadE.obj-c673fbb648c6493fba341fbb0474c22c.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

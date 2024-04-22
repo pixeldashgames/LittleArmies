@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://d0wbfhu8gi7xr"
+path="res://.godot/imported/hex_rock_waterA.obj-c9ed5ccbbb824dbc6ef5a6b638594374.mesh"
+
+[deps]
+
+files=["res://.godot/imported/hex_rock_waterA.obj-c9ed5ccbbb824dbc6ef5a6b638594374.mesh"]
+
+source_file="res://art/terrain/hex_rock_waterA.obj"
+dest_files=["res://.godot/imported/hex_rock_waterA.obj-c9ed5ccbbb824dbc6ef5a6b638594374.mesh", "res://.godot/imported/hex_rock_waterA.obj-c9ed5ccbbb824dbc6ef5a6b638594374.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://co5nw7jjjxscd"]
+
+[ext_resource type="ArrayMesh" uid="uid://26rve1qoctyd" path="res://art/structures/forest.obj" id="1_4qsir"]
+
+[node name="Forest" type="MeshInstance3D"]
+mesh = ExtResource("1_4qsir")

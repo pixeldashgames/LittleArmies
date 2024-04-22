@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3 uid="uid://dn2dip0sm43ji"]
+
+[ext_resource type="Script" path="res://scripts/move_selector.gd" id="1_t5k00"]
+[ext_resource type="Texture2D" uid="uid://cfj6yhwfk4282" path="res://art/textures/cell_highlight.png" id="2_mif2o"]
+
+[node name="MoveSelector" type="StaticBody3D"]
+axis_lock_linear_x = true
+axis_lock_linear_y = true
+axis_lock_linear_z = true
+axis_lock_angular_x = true
+axis_lock_angular_y = true
+axis_lock_angular_z = true
+script = ExtResource("1_t5k00")
+normal_alpha = 0.25
+hover_alpha = 0.6
+attack_color = Color(1, 0.231373, 0.172549, 1)
+move_color = Color(0.184314, 0.890196, 1, 1)
+
+[node name="Sprite" type="Sprite3D" parent="."]
+transform = Transform3D(0.39, 0, 0, 0, -1.70474e-08, 0.39, 0, -0.39, -1.70474e-08, 0, 0.001, 0)
+sorting_offset = 0.001
+modulate = Color(1, 1, 1, 0.498039)
+texture = ExtResource("2_mif2o")
+
+[node name="CollisionPolygon3D" type="CollisionPolygon3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+depth = 0.01
+polygon = PackedVector2Array(-1, -0.575, -1, 0.575, 0, 1.15, 1, 0.575, 1, -0.575, 0, -1.15)

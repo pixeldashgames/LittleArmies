@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dhvnv2a2nsm55"
+path="res://.godot/imported/hex_forest_waterC_detail.obj-2318969d71130c3164a8f56c3969537e.mesh"
+
+[deps]
+
+files=["res://.godot/imported/hex_forest_waterC_detail.obj-2318969d71130c3164a8f56c3969537e.mesh"]
+
+source_file="res://art/terrain/hex_forest_waterC_detail.obj"
+dest_files=["res://.godot/imported/hex_forest_waterC_detail.obj-2318969d71130c3164a8f56c3969537e.mesh", "res://.godot/imported/hex_forest_waterC_detail.obj-2318969d71130c3164a8f56c3969537e.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

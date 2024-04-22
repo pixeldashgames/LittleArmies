@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://26rve1qoctyd"
+path="res://.godot/imported/forest.obj-bb7226de75dca70330f62ffbeded1512.mesh"
+
+[deps]
+
+files=["res://.godot/imported/forest.obj-bb7226de75dca70330f62ffbeded1512.mesh"]
+
+source_file="res://art/structures/forest.obj"
+dest_files=["res://.godot/imported/forest.obj-bb7226de75dca70330f62ffbeded1512.mesh", "res://.godot/imported/forest.obj-bb7226de75dca70330f62ffbeded1512.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

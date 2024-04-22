@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://das2j32peecdp"
+path="res://.godot/imported/mill.obj-19f4d66a25b99cf3df2a29a0a6d1c9e5.mesh"
+
+[deps]
+
+files=["res://.godot/imported/mill.obj-19f4d66a25b99cf3df2a29a0a6d1c9e5.mesh"]
+
+source_file="res://art/structures/mill.obj"
+dest_files=["res://.godot/imported/mill.obj-19f4d66a25b99cf3df2a29a0a6d1c9e5.mesh", "res://.godot/imported/mill.obj-19f4d66a25b99cf3df2a29a0a6d1c9e5.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

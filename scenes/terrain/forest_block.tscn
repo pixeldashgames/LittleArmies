@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://c4g3mj536oddm"]
+
+[ext_resource type="ArrayMesh" uid="uid://c7ibeipo82sdc" path="res://art/terrain/hex_forest_detail.obj" id="1_p41vu"]
+
+[node name="forest_block" type="MeshInstance3D"]
+gi_mode = 2
+mesh = ExtResource("1_p41vu")

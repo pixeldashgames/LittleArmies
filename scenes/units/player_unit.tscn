@@ -1,0 +1,18 @@
+[gd_scene load_steps=5 format=3 uid="uid://d3xrk6kvljv32"]
+
+[ext_resource type="Script" path="res://scripts/unit.gd" id="1_1j0fr"]
+[ext_resource type="Script" path="res://scripts/user_agent.gd" id="2_gdhge"]
+[ext_resource type="PackedScene" uid="uid://723u355i4mm2" path="res://scenes/units/models/hero.tscn" id="3_5gcnb"]
+[ext_resource type="PackedScene" uid="uid://dn2dip0sm43ji" path="res://scenes/move_selector.tscn" id="3_lykoc"]
+
+[node name="PlayerUnit" type="Node3D"]
+script = ExtResource("1_1j0fr")
+
+[node name="Agent" type="Node3D" parent="."]
+script = ExtResource("2_gdhge")
+move_selector_scene = ExtResource("3_lykoc")
+
+[node name="Models" type="Node3D" parent="."]
+
+[node name="Knight" parent="Models" instance=ExtResource("3_5gcnb")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0)

@@ -1,0 +1,43 @@
+[gd_scene load_steps=7 format=3 uid="uid://bwro3su7uu5nc"]
+
+[ext_resource type="PackedScene" uid="uid://cmb1sw3nnmtwu" path="res://scenes/game_map.tscn" id="1_85pqf"]
+[ext_resource type="Script" path="res://scripts/game_controller.gd" id="1_ceaui"]
+[ext_resource type="PackedScene" uid="uid://b06ng7y7f40hy" path="res://scenes/units/random_unit.tscn" id="2_cmoyu"]
+[ext_resource type="PackedScene" uid="uid://d3xrk6kvljv32" path="res://scenes/units/player_unit.tscn" id="3_3e20e"]
+[ext_resource type="PackedScene" uid="uid://ddah6l6dir1cc" path="res://scenes/hex_highlight.tscn" id="3_jov1y"]
+[ext_resource type="Script" path="res://scripts/camera_controller.gd" id="6_oqh7y"]
+
+[node name="Game" type="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0419369, -0.044529, -0.0145645)
+script = ExtResource("1_ceaui")
+morale_starting_values = Array[float]([1.0, 0.9, 0.8, 0.7])
+count_starting_values = Array[int]([20, 25, 50, 10, 35])
+medicine_starting_values = Array[int]([20])
+food_starting_values = Array[int]([200])
+unit_scene = ExtResource("2_cmoyu")
+player_scene = ExtResource("3_3e20e")
+highlight_scene = ExtResource("3_jov1y")
+
+[node name="GameMap" parent="." instance=ExtResource("1_85pqf")]
+castles_count = 4
+map_size = Vector2i(32, 32)
+mountains_randomness_scale = 1.0
+castle_threshold_decrease_step = 0.1
+castles_randomness_scale = 1.0
+extra_width = 10
+extra_height = 10
+
+[node name="Units" type="Node3D" parent="."]
+
+[node name="Highlights" type="Node3D" parent="."]
+
+[node name="TimeBetweenTurns" type="Timer" parent="."]
+wait_time = 0.05
+one_shot = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.322596, 0.946537, 0, -0.946537, 0.322596, 21.385, 10, 40.957)
+fov = 103.9
+script = ExtResource("6_oqh7y")
+camera_speed = 10.0
+camera_damping = 0.2

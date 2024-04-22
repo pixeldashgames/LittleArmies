@@ -1,0 +1,67 @@
+[gd_scene load_steps=13 format=3 uid="uid://cmb1sw3nnmtwu"]
+
+[ext_resource type="Script" path="res://scripts/GameMap.gd" id="1_gtvt7"]
+[ext_resource type="PackedScene" uid="uid://fodkdr6i5mkn" path="res://scenes/perlin_map_generator.tscn" id="2_gej0x"]
+[ext_resource type="PackedScene" uid="uid://c4g3mj536oddm" path="res://scenes/terrain/forest_block.tscn" id="2_ji551"]
+[ext_resource type="PackedScene" uid="uid://bqwo27tr7jhlf" path="res://scenes/terrain/water_block.tscn" id="3_r4odl"]
+[ext_resource type="PackedScene" uid="uid://pwxu6me3ilqn" path="res://scenes/terrain/underground_block.tscn" id="4_lcb2j"]
+[ext_resource type="PackedScene" uid="uid://co5nw7jjjxscd" path="res://scenes/structures/forest.tscn" id="5_d6gr0"]
+[ext_resource type="PackedScene" uid="uid://chtrfdvjjd3f6" path="res://scenes/structures/mountain.tscn" id="6_cabd0"]
+[ext_resource type="PackedScene" uid="uid://e2c1jymhmuc5" path="res://scenes/structures/castle.tscn" id="6_pa5nr"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_6w75r"]
+sun_angle_max = 31.1
+
+[sub_resource type="Sky" id="Sky_qys3e"]
+sky_material = SubResource("ProceduralSkyMaterial_6w75r")
+process_mode = 3
+
+[sub_resource type="Environment" id="Environment_0gyum"]
+background_mode = 2
+sky = SubResource("Sky_qys3e")
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_q8r6v"]
+
+[node name="GameMap" type="Node3D"]
+script = ExtResource("1_gtvt7")
+castles_count = null
+height_scale = 2.0
+height_offset = 0.4
+forest_threshold = 0.9
+map_size = null
+mountains_compound_threshold = 0.75
+mountains_randomness_scale = null
+castle_threshold = 1.7
+castle_threshold_decrease_step = null
+castles_randomness_scale = null
+block_scene = ExtResource("2_ji551")
+water_scene = ExtResource("3_r4odl")
+underground_scene = ExtResource("4_lcb2j")
+forest_scene = ExtResource("5_d6gr0")
+castle_scene = ExtResource("6_pa5nr")
+mountain_scene = ExtResource("6_cabd0")
+extra_width = null
+extra_height = null
+
+[node name="PerlinMapGenerator" parent="." instance=ExtResource("2_gej0x")]
+width = 32
+height = 32
+resolution = 8
+
+[node name="MapParent" type="Node3D" parent="."]
+
+[node name="CastlesParent" type="Node3D" parent="."]
+
+[node name="ForestsParent" type="Node3D" parent="."]
+
+[node name="MountainsParent" type="Node3D" parent="."]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.703359, 0.562165, -0.435035, -0.290639, 0.785948, 0.545724, 0.648702, -0.257402, 0.716191, -1.11479, 6.25007, 9.08792)
+light_color = Color(1, 0.988235, 0.921569, 1)
+light_cull_mask = 4294967279
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_0gyum")
+camera_attributes = SubResource("CameraAttributesPractical_q8r6v")

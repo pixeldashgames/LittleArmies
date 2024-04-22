@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://cdqfqur3a21ea"
+path="res://.godot/imported/hex_rock_roadF_detail.obj-adad7287519024f30a4fc0ec7389d2f2.mesh"
+
+[deps]
+
+files=["res://.godot/imported/hex_rock_roadF_detail.obj-adad7287519024f30a4fc0ec7389d2f2.mesh"]
+
+source_file="res://art/terrain/hex_rock_roadF_detail.obj"
+dest_files=["res://.godot/imported/hex_rock_roadF_detail.obj-adad7287519024f30a4fc0ec7389d2f2.mesh", "res://.godot/imported/hex_rock_roadF_detail.obj-adad7287519024f30a4fc0ec7389d2f2.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

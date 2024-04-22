@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dahwau3ogfstr"
+path="res://.godot/imported/hex_sand_transitionA.obj-3430a0b8c5cd961391f632f496914f78.mesh"
+
+[deps]
+
+files=["res://.godot/imported/hex_sand_transitionA.obj-3430a0b8c5cd961391f632f496914f78.mesh"]
+
+source_file="res://art/terrain/hex_sand_transitionA.obj"
+dest_files=["res://.godot/imported/hex_sand_transitionA.obj-3430a0b8c5cd961391f632f496914f78.mesh", "res://.godot/imported/hex_sand_transitionA.obj-3430a0b8c5cd961391f632f496914f78.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false
