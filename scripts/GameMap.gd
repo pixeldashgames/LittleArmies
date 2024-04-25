@@ -53,7 +53,7 @@ var terrain_array: Array
 var water_array: Array
 var forests_array: Array
 var mountains_array: Array
-var castles_array: Array
+var castles_array: Array[Vector2i]
 
 var water_blocks: Array[Vector2i] = []
 
@@ -141,7 +141,7 @@ func has_mountain_in(pos: Vector2i) -> bool:
 	return mountains_array[pos.y][pos.x] != null
 
 func has_castle_in(pos: Vector2i) -> bool:
-	return castles_array[pos.y][pos.x] != null
+	return pos in castles_array
 
 func has_forest_in(pos: Vector2i) -> bool:
 	return forests_array[pos.y][pos.x] != null
@@ -205,10 +205,11 @@ func _generate_castle(castle_positions, threshold):
 	for pos in castle_positions:
 		var i = int(pos.y)
 		var j = int(pos.x)
+		var pos2d = Vector2i(pos.x, pos.y)
 		var castle_likelyhood = pos.z
 
 		if castle_likelyhood < threshold \
-			or has_water_in(Vector2i(pos.x, pos.y)) or castles_array[i][j] != null:
+			or has_water_in(pos2d) or has_castle_in(pos2d):
 			continue
 		
 		var x_pos = j * 2 + i % 2;
@@ -227,7 +228,7 @@ func _generate_castle(castle_positions, threshold):
 			# mountains_array[i][j].free()
 			mountains_array[i][j] = -1
 
-		castles_array[i][j] = block
+		castles_array.append(pos2d)
 		_update_structure_proximity_map(i, j)
 		return true
 	return false
@@ -243,7 +244,6 @@ func _generate_points_of_interest():
 
 	castle_map = _generate_noise_map()
 	castles_array = []
-	castles_array.resize(map_generator.height)
 
 	var placed_castles = 0
 
@@ -260,9 +260,6 @@ func _generate_points_of_interest():
 		var castle_positions: Array[Vector3] = []
 
 		for i in range(map_generator.height):
-			castles_array[i] = []
-			castles_array[i].resize(map_generator.width)
-			
 			# only _generate castles in the lower quarter of the playable map
 			if i < extra_height + 2 * map_height / 3 or i >= extra_height + map_height:
 				continue

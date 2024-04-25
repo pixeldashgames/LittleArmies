@@ -1,13 +1,78 @@
-[gd_scene load_steps=13 format=3 uid="uid://cmb1sw3nnmtwu"]
+[gd_scene load_steps=18 format=3 uid="uid://cmb1sw3nnmtwu"]
 
 [ext_resource type="Script" path="res://scripts/GameMap.gd" id="1_gtvt7"]
 [ext_resource type="PackedScene" uid="uid://fodkdr6i5mkn" path="res://scenes/perlin_map_generator.tscn" id="2_gej0x"]
-[ext_resource type="PackedScene" uid="uid://c4g3mj536oddm" path="res://scenes/terrain/forest_block.tscn" id="2_ji551"]
-[ext_resource type="PackedScene" uid="uid://bqwo27tr7jhlf" path="res://scenes/terrain/water_block.tscn" id="3_r4odl"]
-[ext_resource type="PackedScene" uid="uid://pwxu6me3ilqn" path="res://scenes/terrain/underground_block.tscn" id="4_lcb2j"]
-[ext_resource type="PackedScene" uid="uid://co5nw7jjjxscd" path="res://scenes/structures/forest.tscn" id="5_d6gr0"]
-[ext_resource type="PackedScene" uid="uid://chtrfdvjjd3f6" path="res://scenes/structures/mountain.tscn" id="6_cabd0"]
+[ext_resource type="ArrayMesh" uid="uid://cyofur41yukfp" path="res://art/terrain/hex_water_detail.obj" id="3_26fsa"]
+[ext_resource type="ArrayMesh" uid="uid://dqccmyqfqqth1" path="res://art/terrain/hex_rock_detail.obj" id="4_fiqrw"]
+[ext_resource type="ArrayMesh" uid="uid://26rve1qoctyd" path="res://art/structures/forest.obj" id="5_gjqbi"]
 [ext_resource type="PackedScene" uid="uid://e2c1jymhmuc5" path="res://scenes/structures/castle.tscn" id="6_pa5nr"]
+[ext_resource type="ArrayMesh" uid="uid://qod1puy1tj7w" path="res://art/structures/mountain.obj" id="7_3vj7g"]
+[ext_resource type="ArrayMesh" uid="uid://c7ibeipo82sdc" path="res://art/terrain/hex_forest_detail.obj" id="9_wutt2"]
+
+[sub_resource type="PackedScene" id="PackedScene_0csob"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("forest_block", "MeshInstance3D", "gi_mode", "mesh"),
+"node_count": 1,
+"node_paths": [],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 2, 2, 0, 3, 1, 0),
+"variants": [2, ExtResource("9_wutt2")],
+"version": 3
+}
+
+[sub_resource type="PackedScene" id="PackedScene_vc1q0"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("HexWaterDetail", "MeshInstance3D", "gi_mode", "mesh"),
+"node_count": 1,
+"node_paths": [],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 2, 2, 0, 3, 1, 0),
+"variants": [2, ExtResource("3_26fsa")],
+"version": 3
+}
+
+[sub_resource type="PackedScene" id="PackedScene_qo7i5"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("HexRockDetail", "MeshInstance3D", "gi_mode", "mesh"),
+"node_count": 1,
+"node_paths": [],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 2, 2, 0, 3, 1, 0),
+"variants": [2, ExtResource("4_fiqrw")],
+"version": 3
+}
+
+[sub_resource type="PackedScene" id="PackedScene_431yy"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("Forest", "mesh", "MeshInstance3D"),
+"node_count": 1,
+"node_paths": [],
+"nodes": PackedInt32Array(-1, -1, 2, 0, -1, 1, 1, 0, 0),
+"variants": [ExtResource("5_gjqbi")],
+"version": 3
+}
+
+[sub_resource type="PackedScene" id="PackedScene_x2in2"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("Mountain", "MeshInstance3D", "mesh"),
+"node_count": 1,
+"node_paths": [],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 1, 2, 0, 0),
+"variants": [ExtResource("7_3vj7g")],
+"version": 3
+}
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_6w75r"]
 sun_angle_max = 31.1
@@ -29,12 +94,12 @@ height_offset = 0.4
 forest_threshold = 0.9
 mountains_compound_threshold = 0.75
 castle_threshold = 1.7
-block_scene = ExtResource("2_ji551")
-water_scene = ExtResource("3_r4odl")
-underground_scene = ExtResource("4_lcb2j")
-forest_scene = ExtResource("5_d6gr0")
+block_scene = SubResource("PackedScene_0csob")
+water_scene = SubResource("PackedScene_vc1q0")
+underground_scene = SubResource("PackedScene_qo7i5")
+forest_scene = SubResource("PackedScene_431yy")
 castle_scene = ExtResource("6_pa5nr")
-mountain_scene = ExtResource("6_cabd0")
+mountain_scene = SubResource("PackedScene_x2in2")
 
 [node name="PerlinMapGenerator" parent="." instance=ExtResource("2_gej0x")]
 width = 32

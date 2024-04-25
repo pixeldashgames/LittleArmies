@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://chtrfdvjjd3f6"]
-
-[ext_resource type="ArrayMesh" uid="uid://qod1puy1tj7w" path="res://art/structures/mountain.obj" id="1_hd1na"]
-
-[node name="Mountain" type="MeshInstance3D"]
-mesh = ExtResource("1_hd1na")

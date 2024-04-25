@@ -1,7 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://pwxu6me3ilqn"]
-
-[ext_resource type="ArrayMesh" uid="uid://dqccmyqfqqth1" path="res://art/terrain/hex_rock_detail.obj" id="1_jbca7"]
-
-[node name="HexRockDetail" type="MeshInstance3D"]
-gi_mode = 2
-mesh = ExtResource("1_jbca7")
