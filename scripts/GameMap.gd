@@ -1,5 +1,14 @@
 class_name GameMap extends Node3D
 
+class MapEntity:
+	var mesh: Mesh
+	var position: Vector3
+
+	@warning_ignore("shadowed_variable")
+	func _init(mesh: Mesh, position: Vector3):
+		self.mesh = mesh
+		self.position = position
+
 @export var castles_count: int = 3
 
 @export var height_scale: float = 1.0
@@ -41,6 +50,7 @@ var water_proximity_map: Array
 var structure_proximity_map: Array
 
 var terrain_array: Array
+var water_array: Array
 var forests_array: Array
 var mountains_array: Array
 var castles_array: Array
@@ -210,12 +220,12 @@ func _generate_castle(castle_positions, threshold):
 		castles_parent.add_child(block);
 		block.position = Vector3(x_pos, y_pos, z_pos)
 
-		if forests_array[i][j] != null:
-			forests_array[i][j].free()
-			forests_array[i][j] = null
-		elif mountains_array[i][j] != null:
-			mountains_array[i][j].free()
-			mountains_array[i][j] = null
+		if forests_array[i][j] >= 0:
+			# forests_array[i][j].free()
+			forests_array[i][j] = -1
+		elif mountains_array[i][j] >= 0:
+			# mountains_array[i][j].free()
+			mountains_array[i][j] = -1
 
 		castles_array[i][j] = block
 		_update_structure_proximity_map(i, j)
@@ -338,23 +348,22 @@ func _generate_forests():
 		forests_array[i].resize(map_generator.width)
 
 		for j in range(map_generator.width):
+			forests_array[i][j] = -1
+
 			if forest_map[i][j] + water_proximity_map[i][j] < forest_threshold \
 				or has_water_in(Vector2i(j, i)):
 				continue
 			
-			var x_pos = j * 2 + i % 2;
-			var z_pos = i * sqrt(3)
+			# var x_pos = j * 2 + i % 2;
+			# var z_pos = i * sqrt(3)
 			var y_pos = (height_map[i][j] + height_offset) * height_scale + 1
 
-			var block = forest_scene.instantiate()
+			# var block = forest_scene.instantiate()
 
-			if (_in_outer_area(i, j)):
-				_set_layer_recursively(block, 5)
+			# forests_parent.add_child(block);
+			# block.position = Vector3(x_pos, y_pos, z_pos)
 
-			forests_parent.add_child(block);
-			block.position = Vector3(x_pos, y_pos, z_pos)
-
-			forests_array[i][j] = block
+			forests_array[i][j] = y_pos
 
 func _generate_mountains():
 	mountain_map = map_generator.GeneratePerlinMap()
@@ -366,28 +375,27 @@ func _generate_mountains():
 		mountains_array[i].resize(map_generator.width)
 		
 		for j in range(map_generator.width):
+			mountains_array[i][j] = -1
+
 			if mountain_map[i][j] * mountains_randomness_scale \
 				 + height_map[i][j] < mountains_compound_threshold \
 				or has_water_in(Vector2i(j, i)):
 				continue
 			
-			var x_pos = j * 2 + i % 2;
-			var z_pos = i * sqrt(3)
+			# var x_pos = j * 2 + i % 2;
+			# var z_pos = i * sqrt(3)
 			var y_pos = (height_map[i][j] + height_offset) * height_scale + 1
 
-			var block = mountain_scene.instantiate()
+			# var block = mountain_scene.instantiate()
 
-			if (_in_outer_area(i, j)):
-				_set_layer_recursively(block, 5)
+			# mountains_parent.add_child(block);
+			# block.position = Vector3(x_pos, y_pos, z_pos)
 
-			mountains_parent.add_child(block);
-			block.position = Vector3(x_pos, y_pos, z_pos)
+			if forests_array[i][j] >= 0:
+				# forests_array[i][j].free()
+				forests_array[i][j] = -1
 
-			if forests_array[i][j] != null:
-				forests_array[i][j].free()
-				forests_array[i][j] = null
-
-			mountains_array[i][j] = block
+			mountains_array[i][j] = y_pos
 
 func _pos_in_outer_area(pos: Vector2i) -> bool:
 	return _in_outer_area(pos.y, pos.x)
@@ -401,33 +409,40 @@ func _generate_heights():
 	terrain_array = []
 	terrain_array.resize(map_generator.height)
 
+	water_array = []
+	water_array.resize(map_generator.height)
+
 	for i in range(map_generator.height):
 		terrain_array[i] = []
 		terrain_array[i].resize(map_generator.width)
+		water_array[i] = []
+		water_array[i].resize(map_generator.width)
 
 		for j in range(map_generator.width):
-			var y_pos
-			var block
+			water_array[i][j] = false
+			terrain_array[i][j] = []
 			
+
+			var y_pos
+			# var block
+			
+			# var x_pos = j * 2 + i % 2;
+			# var z_pos = i * sqrt(3)
+
 			if height_map[i][j] + height_offset < 0:
 				y_pos = 0
-				block = water_scene.instantiate()
+				# block = water_scene.instantiate()
+				water_array[i][j] = true
 				water_blocks.append(Vector2i(j, i))
 			else:
 				y_pos = (height_map[i][j] + height_offset) * height_scale
-				block = block_scene.instantiate()
+				# block = block_scene.instantiate()
+				terrain_array[i][j] = [y_pos]
 
-			if (_in_outer_area(i, j)):
-				_set_layer_recursively(block, 5)
+			# map_parent.add_child(block)
+			# block.position = Vector3(x_pos, y_pos, z_pos)
 
-			map_parent.add_child(block)
-
-			var x_pos = j * 2 + i % 2;
-			var z_pos = i * sqrt(3)
-
-			block.position = Vector3(x_pos, y_pos, z_pos)
-
-			terrain_array[i][j] = block
+			# terrain_array[i][j] = block
 
 			if y_pos == 0:
 				continue
@@ -454,16 +469,11 @@ func _generate_heights():
 
 			# fill the empty space
 			while y_pos > min_underground:
-				var underground_block = underground_scene.instantiate()
-				map_parent.add_child(underground_block)
+				# var underground_block = underground_scene.instantiate()
+				# map_parent.add_child(underground_block)
 				
 				y_pos -= 1
-				underground_block.position = Vector3(x_pos, y_pos, z_pos)
+				terrain_array[i][j].append(y_pos)
+				# underground_block.position = Vector3(x_pos, y_pos, z_pos)
 	
 	_compute_water_proximity_map()
-
-func _set_layer_recursively(node: Node, layer: int):
-	if node is VisualInstance3D:
-		node.layers = 1 << (layer - 1)
-	for child in node.get_children(true):
-		_set_layer_recursively(child, layer)

@@ -1,0 +1,13 @@
+[gd_scene load_steps=4 format=3 uid="uid://bjgrj5i2hexab"]
+
+[ext_resource type="ArrayMesh" uid="uid://c7ibeipo82sdc" path="res://art/terrain/hex_forest_detail.obj" id="1_m8r7p"]
+[ext_resource type="Script" path="res://scenes/terrain_renderer.gd" id="2_rapl6"]
+
+[sub_resource type="MultiMesh" id="MultiMesh_4qpqb"]
+transform_format = 1
+use_colors = true
+mesh = ExtResource("1_m8r7p")
+
+[node name="TerrainRenderer" type="MultiMeshInstance3D"]
+multimesh = SubResource("MultiMesh_4qpqb")
+script = ExtResource("2_rapl6")

@@ -1,0 +1,13 @@
+[gd_scene load_steps=4 format=3 uid="uid://diaqvkpp57p3r"]
+
+[ext_resource type="ArrayMesh" uid="uid://26rve1qoctyd" path="res://art/structures/forest.obj" id="1_la14y"]
+[ext_resource type="Script" path="res://scripts/forests_renderer.gd" id="2_5vyr4"]
+
+[sub_resource type="MultiMesh" id="MultiMesh_3cvt5"]
+transform_format = 1
+use_colors = true
+mesh = ExtResource("1_la14y")
+
+[node name="ForestsRenderer" type="MultiMeshInstance3D"]
+multimesh = SubResource("MultiMesh_3cvt5")
+script = ExtResource("2_5vyr4")

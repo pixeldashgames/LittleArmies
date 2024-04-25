@@ -9,6 +9,15 @@ const morale_effect_range = Vector2(0, 1)
 const count_effect_range = Vector2(0.5, 1)
 const injured_effect_range = Vector2(0, 1)
 
+const max_unit_visibility := 10
+const morale_effect_curve_on_visibility := 0.5
+const max_count_that_affects_visibility := 20
+const count_effect_curve_on_visibility := 3.6
+const injured_percentage_effect_curve_on_visibility := 0.4
+const morale_visibility_effect_range = Vector2(0, 1)
+const count_visibility_effect_range = Vector2(0.5, 1)
+const injured_visibility_effect_range = Vector2(0, 1)
+
 @onready var agent: Agent = $Agent
 
 var current_position: Vector2i
@@ -37,6 +46,9 @@ func initialize(controller, unit_pos, unit_team, unit_count, unit_morale, unit_i
 		if anim_player:
 			anim_player.play("Idle")
 
+
+func get_visibility_range() -> float:
+	return 5 
 
 # how far can this unit move in one turn
 func get_unit_speed() -> float:

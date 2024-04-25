@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://bwro3su7uu5nc"]
+[gd_scene load_steps=7 format=3 uid="uid://bwro3su7uu5nc"]
 
 [ext_resource type="PackedScene" uid="uid://cmb1sw3nnmtwu" path="res://scenes/game_map.tscn" id="1_85pqf"]
 [ext_resource type="Script" path="res://scripts/game_controller.gd" id="1_ceaui"]
@@ -6,12 +6,6 @@
 [ext_resource type="PackedScene" uid="uid://d3xrk6kvljv32" path="res://scenes/units/player_unit.tscn" id="3_3e20e"]
 [ext_resource type="PackedScene" uid="uid://ddah6l6dir1cc" path="res://scenes/hex_highlight.tscn" id="3_jov1y"]
 [ext_resource type="Script" path="res://scripts/camera_controller.gd" id="6_oqh7y"]
-[ext_resource type="Script" path="res://scripts/hex_renderer.gd" id="7_vnf7q"]
-[ext_resource type="PackedScene" uid="uid://bjgrj5i2hexab" path="res://scenes/renderer/terrain_renderer.tscn" id="8_dljjw"]
-[ext_resource type="PackedScene" uid="uid://dymd474460hms" path="res://scenes/renderer/underground_renderer.tscn" id="9_ivv3j"]
-[ext_resource type="PackedScene" uid="uid://va5d7fiocsqv" path="res://scenes/renderer/water_renderer.tscn" id="10_hs8xf"]
-[ext_resource type="PackedScene" uid="uid://dq8eku3fdcfse" path="res://scenes/renderer/mountains_renderer.tscn" id="11_5ftrv"]
-[ext_resource type="PackedScene" uid="uid://diaqvkpp57p3r" path="res://scenes/renderer/forests_renderer.tscn" id="12_0asyr"]
 
 [node name="Game" type="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0419369, -0.044529, -0.0145645)
@@ -43,23 +37,3 @@ fov = 103.9
 script = ExtResource("6_oqh7y")
 camera_speed = 10.0
 camera_damping = 0.2
-
-[node name="TerrainRenderer" type="Node3D" parent="."]
-script = ExtResource("7_vnf7q")
-multi_mesh_scene = ExtResource("8_dljjw")
-
-[node name="UndergroundRenderer" type="Node3D" parent="."]
-script = ExtResource("7_vnf7q")
-multi_mesh_scene = ExtResource("9_ivv3j")
-
-[node name="WaterRenderer" type="Node3D" parent="."]
-script = ExtResource("7_vnf7q")
-multi_mesh_scene = ExtResource("10_hs8xf")
-
-[node name="MountainsRenderer" type="Node3D" parent="."]
-script = ExtResource("7_vnf7q")
-multi_mesh_scene = ExtResource("11_5ftrv")
-
-[node name="ForestsRenderer" type="Node3D" parent="."]
-script = ExtResource("7_vnf7q")
-multi_mesh_scene = ExtResource("12_0asyr")

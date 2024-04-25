@@ -2,7 +2,7 @@ class_name GameController extends Node3D
 
 const forest_speed_penalty: float = 1.5
 const mountain_speed_penalty: float = 2.5
-const water_speed_penalty: float = 1.5
+const water_speed_penalty: float = 2
 const max_altitude_difference: float = 1.5
 const max_altitude_difference_penalty_multiplier: float = 2.5
 const altitude_penalty_curve: float = 2.4
@@ -25,6 +25,11 @@ const unit_float_height: float = 2
 @onready var time_between_turns: Timer = $TimeBetweenTurns
 
 @onready var camera:Camera3D = $Camera3D
+@onready var terrain_renderer = $TerrainRenderer
+@onready var underground_renderer = $UndergroundRenderer
+@onready var water_renderer = $WaterRenderer
+@onready var forests_renderer = $ForestsRenderer
+@onready var mountains_renderer = $MountainsRenderer
 
 var units_array: Array[Unit] = []
 
@@ -32,6 +37,12 @@ var units_hightlights: Array = []
 
 func _ready():
 	game_map.generate()
+	terrain_renderer.render(game_map)
+	underground_renderer.render(game_map)
+	water_renderer.render(game_map)
+	forests_renderer.render(game_map)
+	mountains_renderer.render(game_map)
+
 	_generate_units()
 	_update_unit_positions()
 	_game_loop()
@@ -124,6 +135,9 @@ func get_unit_at(pos: Vector2i) -> Unit:
 		if unit.current_position == pos:
 			return unit
 	return null
+
+func get_visible_cells(unit: Unit, from: Vector2i) -> Array:
+	return []
 
 func get_moves(unit: Unit, from: Vector2i) -> Array:
 	var speed = unit.get_unit_speed()

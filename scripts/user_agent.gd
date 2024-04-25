@@ -22,7 +22,10 @@ var _hovered_selector: MoveSelector = null
 var _possible_moves
 
 func get_move() -> AgentMove:
-	_possible_moves = controller.get_moves(unit, unit.current_position)
+	# _possible_moves = controller.get_moves(unit, unit.current_position)
+	
+	_possible_moves = HexagonMath.get_cells_between(unit.current_position, \
+		unit.current_position + Vector2i(1, -1))
 	build_selectors(_possible_moves)
 
 	_current_selector_state = SelectorState.SELECTING_MOVE

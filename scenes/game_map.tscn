@@ -24,24 +24,17 @@ sky = SubResource("Sky_qys3e")
 
 [node name="GameMap" type="Node3D"]
 script = ExtResource("1_gtvt7")
-castles_count = null
 height_scale = 2.0
 height_offset = 0.4
 forest_threshold = 0.9
-map_size = null
 mountains_compound_threshold = 0.75
-mountains_randomness_scale = null
 castle_threshold = 1.7
-castle_threshold_decrease_step = null
-castles_randomness_scale = null
 block_scene = ExtResource("2_ji551")
 water_scene = ExtResource("3_r4odl")
 underground_scene = ExtResource("4_lcb2j")
 forest_scene = ExtResource("5_d6gr0")
 castle_scene = ExtResource("6_pa5nr")
 mountain_scene = ExtResource("6_cabd0")
-extra_width = null
-extra_height = null
 
 [node name="PerlinMapGenerator" parent="." instance=ExtResource("2_gej0x")]
 width = 32
