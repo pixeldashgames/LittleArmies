@@ -9,5 +9,6 @@ use_colors = true
 mesh = ExtResource("1_vo4se")
 
 [node name="WaterRenderer" type="MultiMeshInstance3D"]
+cast_shadow = 0
 multimesh = SubResource("MultiMesh_tfxlm")
 script = ExtResource("2_2ysky")

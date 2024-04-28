@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3 uid="uid://b3ao22el2bixv"]
+
+[ext_resource type="PackedScene" uid="uid://va5d7fiocsqv" path="res://scenes/renderers/water_renderer.tscn" id="1_fnpa8"]
+[ext_resource type="Material" uid="uid://cpfdncmbvgl2e" path="res://materials/shadowed_water.tres" id="2_od4rj"]
+
+[node name="ShadowedWaterRenderer" instance=ExtResource("1_fnpa8")]
+material_override = ExtResource("2_od4rj")

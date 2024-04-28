@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://bqlovoornvy05"]
+
+[ext_resource type="Texture2D" uid="uid://drgv1huvwqg7b" path="res://art/textures/blurred.png" id="1_rsdut"]
+
+[node name="CellDecal" type="Decal"]
+transform = Transform3D(2.04, 0, 0, 0, 2.04, 0, 0, 0, 2.04, 0, 3, 0)
+size = Vector3(2, 3, 2.309)
+texture_albedo = ExtResource("1_rsdut")
+emission_energy = 106.5
+modulate = Color(0, 0, 0, 1)
+upper_fade = 1e-05
+lower_fade = 1e-05

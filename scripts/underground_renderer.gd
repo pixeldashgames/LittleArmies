@@ -1,4 +1,4 @@
-extends MultiMeshInstance3D
+extends CellRenderer
 
 func render(game_map: GameMap, from: Vector2i, to: Vector2i):
 	var terrain_array = game_map.terrain_array
@@ -16,11 +16,12 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i):
 			if len(terrain_array[i][j]) <= 1:
 				continue
 			
-			var x_pos = j * 2 + i % 2;
+			var x_pos = j * 2 + posmod(i, 2)
 			var z_pos = i * sqrt(3)
 
 			for k in range(1, len(terrain_array[i][j])):
 				transforms.append(Transform3D(Basis(), Vector3(x_pos, terrain_array[i][j][k], z_pos)))
+				instance_positions.append(Vector2i(j, i))
 	
 	var count = len(transforms)
 	multimesh.instance_count = count

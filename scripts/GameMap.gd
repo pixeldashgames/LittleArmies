@@ -9,6 +9,13 @@ class MapEntity:
 		self.mesh = mesh
 		self.position = position
 
+enum TerrainType {
+	PLAIN = 0,
+	FOREST = 1,
+	MOUNTAIN = 2,
+	WATER = 3
+}
+
 @export var castles_count: int = 3
 
 @export var height_scale: float = 1.0
@@ -62,9 +69,20 @@ func _ready():
 	map_generator.height = map_size.y + 2 * extra_height
  
 func get_game_pos(matrix_pos: Vector2i):
-	var x_pos = matrix_pos.x * 2 + matrix_pos.y % 2;
+	var x_pos = matrix_pos.x * 2 + posmod(matrix_pos.y, 2)
 	var z_pos = matrix_pos.y * sqrt(3)
 	return Vector3(x_pos, get_height_at(matrix_pos), z_pos)
+
+func get_terrain_at(pos: Vector2i) -> TerrainType:
+	if has_water_in(pos):
+		return TerrainType.WATER
+	elif has_mountain_in(pos):
+		return TerrainType.MOUNTAIN
+	elif has_forest_in(pos):
+		return TerrainType.FOREST
+	else:
+		return TerrainType.PLAIN
+
 
 func get_size() -> Vector2i: return Vector2i(map_generator.width, map_generator.height)
 
@@ -74,11 +92,11 @@ func get_directions(from: Vector2i) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	var from_row = from.y
 
-	var up_left = Vector2i( - 1, -1) if from_row % 2 == 0 else Vector2i(0, -1)
+	var up_left = Vector2i( - 1, -1) if posmod(from_row, 2) == 0 else Vector2i(0, -1)
 	if not _pos_in_outer_area(from + up_left):
 		result.append(up_left)
 
-	var up_right = Vector2i(0, -1) if from_row % 2 == 0 else Vector2i(1, -1)
+	var up_right = Vector2i(0, -1) if posmod(from_row, 2) == 0 else Vector2i(1, -1)
 	if not _pos_in_outer_area(from + up_right):
 		result.append(up_right)
 
@@ -90,11 +108,11 @@ func get_directions(from: Vector2i) -> Array[Vector2i]:
 	if not _pos_in_outer_area(from + right):
 		result.append(right)
 
-	var down_left = Vector2i( - 1, 1) if from_row % 2 == 0 else Vector2i(0, 1)
+	var down_left = Vector2i( - 1, 1) if posmod(from_row, 2) == 0 else Vector2i(0, 1)
 	if not _pos_in_outer_area(from + down_left):
 		result.append(down_left)
 
-	var down_right = Vector2i(0, 1) if from_row % 2 == 0 else Vector2i(1, 1)
+	var down_right = Vector2i(0, 1) if posmod(from_row, 2) == 0 else Vector2i(1, 1)
 	if not _pos_in_outer_area(from + down_right):
 		result.append(down_right)
 
@@ -104,11 +122,11 @@ func get_map_directions(from: Vector2i):
 	var result: Array[Vector2i] = []
 	var from_row = from.y
 
-	var up_left = Vector2i( - 1, -1) if from_row % 2 == 0 else Vector2i(0, -1)
+	var up_left = Vector2i( - 1, -1) if posmod(from_row, 2) == 0 else Vector2i(0, -1)
 	if is_valid_pos(from + up_left):
 		result.append(up_left)
 
-	var up_right = Vector2i(0, -1) if from_row % 2 == 0 else Vector2i(1, -1)
+	var up_right = Vector2i(0, -1) if posmod(from_row, 2) == 0 else Vector2i(1, -1)
 	if is_valid_pos(from + up_right):
 		result.append(up_right)
 
@@ -120,11 +138,11 @@ func get_map_directions(from: Vector2i):
 	if is_valid_pos(from + right):
 		result.append(right)
 
-	var down_left = Vector2i( - 1, 1) if from_row % 2 == 0 else Vector2i(0, 1)
+	var down_left = Vector2i( - 1, 1) if posmod(from_row, 2) == 0 else Vector2i(0, 1)
 	if is_valid_pos(from + down_left):
 		result.append(down_left)
 
-	var down_right = Vector2i(0, 1) if from_row % 2 == 0 else Vector2i(1, 1)
+	var down_right = Vector2i(0, 1) if posmod(from_row, 2) == 0 else Vector2i(1, 1)
 	if is_valid_pos(from + down_right):
 		result.append(down_right)
 
@@ -135,20 +153,19 @@ func is_valid_pos(pos: Vector2i) -> bool:
 		pos.x >= 0 and pos.x < map_generator.width
 
 func has_water_in(pos: Vector2i) -> bool:
-	return height_map[pos.y][pos.x] + height_offset < 0
+	return water_array[pos.y][pos.x]
 
 func has_mountain_in(pos: Vector2i) -> bool:
-	return mountains_array[pos.y][pos.x] != null
+	return mountains_array[pos.y][pos.x] >= 0
 
 func has_castle_in(pos: Vector2i) -> bool:
 	return pos in castles_array
 
 func has_forest_in(pos: Vector2i) -> bool:
-	return forests_array[pos.y][pos.x] != null
+	return forests_array[pos.y][pos.x] >= 0
 
 func get_height_at(pos: Vector2i) -> float:
-	return (height_map[pos.y][pos.x] + height_offset) * height_scale + 1 \
-		if not has_water_in(pos) else 1
+	return ((height_map[pos.y][pos.x] + height_offset) * height_scale + 1) if not has_water_in(pos) else 1
 
 func generate():
 	_generate_heights()
@@ -212,13 +229,13 @@ func _generate_castle(castle_positions, threshold):
 			or has_water_in(pos2d) or has_castle_in(pos2d):
 			continue
 		
-		var x_pos = j * 2 + i % 2;
+		var x_pos = j * 2 + posmod(i, 2)
 		var z_pos = i * sqrt(3)
 		var y_pos = (height_map[i][j] + height_offset) * height_scale + 1
 
 		var block = castle_scene.instantiate()
 
-		castles_parent.add_child(block);
+		castles_parent.add_child(block)
 		block.position = Vector3(x_pos, y_pos, z_pos)
 
 		if forests_array[i][j] >= 0:
@@ -351,13 +368,13 @@ func _generate_forests():
 				or has_water_in(Vector2i(j, i)):
 				continue
 			
-			# var x_pos = j * 2 + i % 2;
+			# var x_pos = j * 2 + posmod(i, 2)
 			# var z_pos = i * sqrt(3)
 			var y_pos = (height_map[i][j] + height_offset) * height_scale + 1
 
 			# var block = forest_scene.instantiate()
 
-			# forests_parent.add_child(block);
+			# forests_parent.add_child(block)
 			# block.position = Vector3(x_pos, y_pos, z_pos)
 
 			forests_array[i][j] = y_pos
@@ -379,13 +396,13 @@ func _generate_mountains():
 				or has_water_in(Vector2i(j, i)):
 				continue
 			
-			# var x_pos = j * 2 + i % 2;
+			# var x_pos = j * 2 + posmod(i, 2)
 			# var z_pos = i * sqrt(3)
 			var y_pos = (height_map[i][j] + height_offset) * height_scale + 1
 
 			# var block = mountain_scene.instantiate()
 
-			# mountains_parent.add_child(block);
+			# mountains_parent.add_child(block)
 			# block.position = Vector3(x_pos, y_pos, z_pos)
 
 			if forests_array[i][j] >= 0:
@@ -423,7 +440,7 @@ func _generate_heights():
 			var y_pos
 			# var block
 			
-			# var x_pos = j * 2 + i % 2;
+			# var x_pos = j * 2 + posmod(i, 2)
 			# var z_pos = i * sqrt(3)
 
 			if height_map[i][j] + height_offset < 0:

@@ -3,9 +3,11 @@ class_name Agent extends Node3D
 class AgentMove:
 	var target_pos
 	var attacking_pos
+	var entry_path
 
-	func _init(target, attack = null):
+	func _init(target, entry, attack = null):
 		target_pos = target
+		entry_path = entry
 		attacking_pos = attack
 
 var controller: GameController

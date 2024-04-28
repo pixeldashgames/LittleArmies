@@ -8,33 +8,35 @@ class EnemyPositionKnowledge:
 	func _init():
 		self.position = Vector2i(-1, -1)
 		self.last_seen = -1
-	
+
 class Knowledge:
 	var cells_visibility: Array
 	var enemy_positions: Dictionary
-	var map_width
-	var map_height
 
 	@warning_ignore("shadowed_variable")
 	func _init(width: int, height: int, enemies: Array[Unit]):
-		map_width = width
-		map_height = height
 		self.cells_visibility = []
-		self.cells_visibility.resize(height)
 		for i in height:
-			self.cells_visibility[i] = []
-			self.cells_visibility[i].resize(width)
+			self.cells_visibility.append([])
 			for j in width:
-				self.cells_visibility[i][j] = 0
+				self.cells_visibility[i].append({})
 		self.enemy_positions = {}
 		for e in enemies:
 			self.enemy_positions[e] = EnemyPositionKnowledge.new()
 	
-	func reset_visibility_map():
-		for i in map_height:
-			for j in map_width:
-				self.cells_visibility[i][j] = 0
-		
+	func reset_visibility_map_for(source):
+		for i in len(cells_visibility):
+			for j in len(cells_visibility[i]):
+				cells_visibility[i][j].erase(source)
+
+	func get_visibility_at(pos: Vector2i):
+		var visibility_values = cells_visibility[pos.y][pos.x].values()
+		if len(visibility_values) == 0:
+			return 0
+		return visibility_values.max()
+
+	func set_cell_visibility(source, cell: Vector2i, visibility: float):
+		cells_visibility[cell.y][cell.x][source] = visibility
 
 const forest_speed_penalty: float = 1.5
 const mountain_speed_penalty: float = 2.5
@@ -45,6 +47,11 @@ const altitude_penalty_curve: float = 2.4
 const unit_separation: int = 5
 const unit_float_height: float = 2
 
+const plains_initial_visibility_multiplier: float = 1
+const water_initial_visibility_multiplier: float = 1.1
+const mountain_initial_visibility_multiplier: float = 2
+const forest_initial_visibility_multiplier: float = 0.5
+
 const plains_visibility_multiplier: float = 0.9
 const water_visibility_multiplier: float = 0.95
 const forest_visibility_multiplier: float = 0.3
@@ -54,24 +61,28 @@ const altitude_decrease_visibility_multiplier_curve: float = 0.4
 const altitude_increase_visibility_multiplier_curve: float = 0.2
 const altitude_difference_multiplier_range := Vector2(0, 1.2)
 
-const castle_vigilance_range: float = 7 
+const castle_vigilance_range: float = 5
+
+signal finish_update_visibility
 
 @export var morale_starting_values: Array[float]
 @export var count_starting_values: Array[int]
-@export var medicine_starting_values: Array[int]
 @export var food_starting_values: Array[int]
 
 @export var unit_scene: PackedScene
 @export var player_scene: PackedScene
 @export var highlight_scene: PackedScene
+@export var unit_properties_scene: PackedScene
 @export var teams_unit_counts: Array[int] = [5, 5]
 
 @onready var game_map: GameMap = $GameMap
 @onready var units_parent: Node3D = $Units
 @onready var highlights_parent: Node3D = $Highlights
+@onready var unit_properties_parent: Node3D = $UnitProperties
 @onready var time_between_turns: Timer = $TimeBetweenTurns
 
 @onready var camera:Camera3D = $Camera3D
+@onready var knowledge_updater = $KnowledgeUpdater
 @onready var terrain_renderer = $TerrainRenderer
 @onready var underground_renderer = $UndergroundRenderer
 @onready var water_renderer = $WaterRenderer
@@ -81,36 +92,84 @@ const castle_vigilance_range: float = 7
 var units_array: Array[Unit] = []
 
 var units_hightlights: Array = []
+var unit_properties_objects: Array = []
 
 var teams_knowledge: Array[Knowledge] = []
 
+var teams_finished_update = 0
+var total_updates = 0
+
 func _ready():
 	game_map.generate()
+	_run_full_render()
+	_generate_units()
+
+	for team in range(len(teams_unit_counts)):
+		teams_knowledge.append(\
+			Knowledge.new(game_map.map_generator.width,\
+				game_map.map_generator.height,\
+				units_array.filter(func(u): return u.team != team)))
+
+	_update_castles_visibility()
+
+	for u in units_array:
+		_update_knowledge(u)
+
+	_update_units(0)
+	_render_all_shadows(0)
+
+	_game_loop()
+	var mid_map = game_map.get_game_pos(game_map.get_size() / 2)
+	mid_map.y = 10
+	camera.position = mid_map
+
+func _run_full_render():
 	terrain_renderer.render(game_map)
 	underground_renderer.render(game_map)
 	water_renderer.render(game_map)
 	forests_renderer.render(game_map)
 	mountains_renderer.render(game_map)
 
-	_generate_units()
-	_update_unit_positions()
-	_game_loop()
-	var mid_map = game_map.get_game_pos(game_map.get_size() / 2)
-	mid_map.y = 10
-	camera.position = mid_map
+func _render_all_shadows(team: int):
+	var visibility_function = teams_knowledge[team].get_visibility_at
+	
+	# var image = Image.create(len(teams_knowledge[team].cells_visibility[0]), len(teams_knowledge[team].cells_visibility), false, Image.FORMAT_RGBA8)
 
+	# for y in range(image.get_height()):
+	# 	for x in range(image.get_width()):
+	# 		var color = Color(visibility_function.call(Vector2i(x, y)), 1 - visibility_function.call(Vector2i(x, y)), 0, 1.0)  # Random color
+	# 		image.set_pixel(x, y, color)
+
+	# var path = "user://generated_texture_" + str(randi() % 100) + ".png"
+	# image.save_png(path)
+
+	terrain_renderer.change_visibility(visibility_function)
+	underground_renderer.change_visibility(visibility_function)
+	water_renderer.change_visibility(visibility_function)
+	forests_renderer.change_visibility(visibility_function)
+	mountains_renderer.change_visibility(visibility_function)
+			
 func _game_loop():
 	while not _is_game_over():
 		for unit in units_array:
 			@warning_ignore("redundant_await")
 			var move = await unit.agent.get_move()
 			_perform_move(unit, move)
-			_update_unit_positions()
-			_update_knowledge()
 			time_between_turns.start()
-			await time_between_turns.timeout
+			_update_knowledge(unit)
+			_update_units(0)
+			_render_all_shadows(0)
+			unit.decrease_morale()
+			unit.decrease_supplies()
+			if not time_between_turns.is_stopped():
+				await time_between_turns.timeout
 
-func _update_visibility_map(team: int, from: Vector2i, max_range: float):
+func finish_update_visibility_map():
+	teams_finished_update += 1
+	if teams_finished_update >= total_updates:
+		finish_update_visibility.emit()
+
+func get_cells_in_range(from: Vector2i, max_range: float):
 	var cells_in_range = [from]
 	var queue = [[from, max_range]]
 
@@ -124,89 +183,147 @@ func _update_visibility_map(team: int, from: Vector2i, max_range: float):
 		for dir in directions:
 			var new_pos = current[0] + dir
 
+			if not game_map.is_valid_pos(new_pos):
+				continue
+
 			if cells_in_range.has(new_pos):
 				continue
 
 			cells_in_range.append(new_pos)
 			queue.append([new_pos, current[1] - 1])
-	
-	for c in cells_in_range:
-		var cells_in_between = HexagonMath.get_cells_between(from, c)
-		var visibility = 1
-		var this_height = game_map.get_height_at(from)
-		var height_change_point = this_height
-		var increased_height = false
-		var last_height = height_change_point
-		for i in range(1, len(cells_in_between)):
-			if game_map.has_water_in(cells_in_between[i]):
-				visibility *= water_visibility_multiplier
-			elif game_map.has_forest_in(cells_in_between[i]):
-				visibility *= forest_visibility_multiplier
-			elif game_map.has_mountain_in(cells_in_between[i]):
-				visibility *= mountain_visibility_multiplier
-			else:
-				visibility *= plains_visibility_multiplier
-			
-			var height = game_map.get_height_at(cells_in_between[i])
-			if height > last_height:
-				increased_height = true
-				if height > height_change_point:
-					height_change_point = height
-			elif not increased_height:
+
+	return cells_in_range	
+
+func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, this_height: float, team: int):
+	if from == c:
+		teams_knowledge[team].set_cell_visibility(source, from, 1)
+		return
+
+	var visibility
+	if game_map.has_water_in(from):
+		visibility = water_initial_visibility_multiplier
+	elif game_map.has_forest_in(from):
+		visibility = forest_initial_visibility_multiplier
+	elif game_map.has_mountain_in(from):
+		visibility = mountain_initial_visibility_multiplier
+	else:
+		visibility = plains_initial_visibility_multiplier
+
+	var cells_in_between = HexagonMath.get_cells_between(from, c)
+
+	var height_change_point = this_height
+	var increased_height = false
+	var last_height = height_change_point
+	for i in range(1, len(cells_in_between)):
+		if not game_map.is_valid_pos(cells_in_between[i]):
+			continue
+
+		if game_map.has_water_in(cells_in_between[i]):
+			visibility *= water_visibility_multiplier
+		elif game_map.has_forest_in(cells_in_between[i]):
+			visibility *= forest_visibility_multiplier
+		elif game_map.has_mountain_in(cells_in_between[i]):
+			visibility *= mountain_visibility_multiplier
+		else:
+			visibility *= plains_visibility_multiplier
+		
+		var height = game_map.get_height_at(cells_in_between[i])
+		if height > last_height:
+			increased_height = true
+			if height > height_change_point:
 				height_change_point = height
-
-		var curve = altitude_decrease_visibility_multiplier_curve if this_height > height_change_point else altitude_increase_visibility_multiplier_curve
-
-		var value = clampf(abs(this_height - height_change_point) / max_altitude_difference_for_visibility, 0, 1)
-
-		var unsigned_value = value if this_height > height_change_point else value
-
-		var altitude_vis_multiplier = ease(unsigned_value, curve)
-
-		var range_min = 1.0 if this_height > height_change_point else altitude_difference_multiplier_range.x
-		var range_max = altitude_difference_multiplier_range.y if this_height > height_change_point else 1.0
-
-		visibility *= lerpf(range_min, range_max, altitude_vis_multiplier)
-
-		var current_visibility = teams_knowledge[team].cells_visibility[c.y][c.x] 
-		if visibility > current_visibility:
-			teams_knowledge[team].cells_visibility[c.y][c.x] = visibility
-
-func _update_knowledge():
-	for team in range(teams_unit_counts.size()):
-		teams_knowledge[team].reset_visibility_map()
-
-		# updating visibility
-		for unit in units_array.filter(func(u): return u.team == team):
-			var vigilance_range = unit.get_vigilance_range()
-			_update_visibility_map(team, unit.current_position, vigilance_range)
+			last_height = height
+		elif not increased_height:
+			height_change_point = height
+			last_height = height
 		
-		if team == 0:
-			for castle in game_map.castles_array:
-				_update_visibility_map(team, castle, castle_vigilance_range)
-		
-		var visibility_map = teams_knowledge[team].cells_visibility
+	var curve = altitude_decrease_visibility_multiplier_curve if this_height > height_change_point else altitude_increase_visibility_multiplier_curve
 
-		for enemy in units_array.filter(func(u): return u.team != team):
-			var pos = enemy.current_position
-			var chance = enemy.get_visibility_chance() * visibility_map[pos.y][pos.x]
-			var enemy_knowledge = teams_knowledge[team].enemy_positions[enemy]
-			if chance > 0:
-				if enemy_knowledge.last_seen == 0:
-					enemy_knowledge.position = pos
-				elif randf() <= chance:
-					enemy_knowledge.position = pos
-					enemy_knowledge.last_seen = 0
-				elif enemy_knowledge.last_seen != -1:
-					enemy_knowledge.last_seen += 1
+	var value = clampf(abs(this_height - height_change_point) / max_altitude_difference_for_visibility, 0, 1)
+
+	var unsigned_value = value if this_height > height_change_point else (1 - value)
+
+	var altitude_vis_multiplier = ease(unsigned_value, curve)
+
+	var range_min = 1.0 if this_height > height_change_point else altitude_difference_multiplier_range.x
+	var range_max = altitude_difference_multiplier_range.y if this_height > height_change_point else 1.0
+
+	visibility *= lerpf(range_min, range_max, altitude_vis_multiplier)
+
+	teams_knowledge[team].set_cell_visibility(source, c, visibility)
+
+func _update_visibility_for_source(source, from: Vector2i, height: float, team: int, vigilance_range: float):
+	var cells_in_range = get_cells_in_range(from, vigilance_range)
+	for c in cells_in_range:
+		update_visibility_for_cell(source, from, c, height, team)
+
+func _update_castles_visibility():
+	for castle in game_map.castles_array:
+		var height = game_map.get_height_at(castle)
+		_update_visibility_for_source("castle", castle, height, 0, castle_vigilance_range)
+
+func _update_knowledge(unit: Unit):
+	teams_knowledge[unit.team].reset_visibility_map_for(unit)
+
+	var vigilance_range = unit.get_vigilance_range()
+	var height = game_map.get_height_at(unit.current_position)
+
+	_update_visibility_for_source(unit, unit.current_position, height, unit.team, vigilance_range)
+
+	for enemy in units_array.filter(func(u): return u.team != unit.team):
+		var pos = enemy.current_position
+		var chance = enemy.get_visibility_chance() * teams_knowledge[unit.team].get_visibility_at(pos)
+		var enemy_knowledge = teams_knowledge[unit.team].enemy_positions[enemy]
+		if chance > 0:
+			if enemy_knowledge.last_seen == 0:
+				enemy_knowledge.position = pos
+			elif randf() <= chance:
+				enemy_knowledge.position = pos
+				enemy_knowledge.last_seen = 0
 			elif enemy_knowledge.last_seen != -1:
 				enemy_knowledge.last_seen += 1
+		elif enemy_knowledge.last_seen != -1:
+			enemy_knowledge.last_seen += 1
 				
 func _perform_move(unit: Unit, move: Agent.AgentMove):
-	unit.current_position = move.target_pos
+	var enemy_positions = units_array.filter(func(u): return u.team != unit.team)\
+							.reduce(func(accum, u):
+								accum[u.current_position] = u
+								return accum, {})
+
+	for entry_move in move.entry_path:
+		if entry_move in enemy_positions:
+				# unexpected attack
+				_perform_battle(unit, enemy_positions[entry_move], -1)
+				return
+		unit.current_position = entry_move
+
+	if move.attacking_pos != null:
+		_perform_battle(unit, enemy_positions[move.attacking_pos], 0)
 
 func _perform_battle(unit_a: Unit, unit_b: Unit, advantage_unit: int):
-	pass
+	var unit_a_terrain = game_map.get_terrain_at(unit_a.current_position)
+	var unit_b_terrain = game_map.get_terrain_at(unit_b.current_position)
+	var unit_a_height = game_map.get_height_at(unit_a.current_position)
+	var unit_b_height = game_map.get_height_at(unit_b.current_position)
+
+	var unit_a_damage = unit_a.get_damage(unit_a_terrain, unit_b_terrain, unit_a_height, unit_b_height, advantage_unit == 0)
+	var unit_b_damage = unit_b.get_damage(unit_b_terrain, unit_a_terrain, unit_b_height, unit_a_height, advantage_unit == 1)
+
+	unit_a.kill_units(unit_b_damage[0])
+	unit_a.injure_units(unit_b_damage[1])
+	unit_b.kill_units(unit_a_damage[0])
+	unit_b.injure_units(unit_a_damage[1])
+
+func destroy_unit(unit: Unit):
+	units_array.erase(unit)
+	for team in range(len(teams_knowledge)):
+		if team == unit.team:
+			teams_knowledge[team].reset_visibility_map_for(unit)
+		else:
+			teams_knowledge[team].enemy_positions.erase(unit)
+
+	unit.queue_free()
 
 func _is_game_over() -> bool:
 	return false
@@ -243,16 +360,34 @@ func _generate_unit_at(pos: Vector2i, team: int, is_player: bool):
 	if team == 0:
 		unit.rotation_degrees.y = 180
 	unit.initialize(self, pos, team, count_starting_values.pick_random(), \
-		morale_starting_values.pick_random(), 0, food_starting_values.pick_random(), \
-		medicine_starting_values.pick_random())
+		morale_starting_values.pick_random(), 0, food_starting_values.pick_random())
 	units_array.append(unit)
 
-func _update_unit_positions():
+func _update_units(player_team: int):
 	for highlight in units_hightlights:
 		highlight.queue_free()
 	units_hightlights.clear()
 
+	for prop in unit_properties_objects:
+		prop.queue_free()
+	unit_properties_objects.clear()
+
+	var queued_for_elimination = []
+
 	for unit in units_array:
+		if unit.is_dead():
+			queued_for_elimination.append(unit)
+			continue
+	
+	for unit in queued_for_elimination:
+		destroy_unit(unit)
+
+	for unit in units_array:
+		if player_team != -1 and unit.team != player_team:
+			unit.visible = teams_knowledge[player_team].enemy_positions[unit].last_seen == 0
+			if not unit.visible:
+				continue
+
 		var matrix_pos = unit.current_position
 
 		var pos = game_map.get_game_pos(matrix_pos)
@@ -272,11 +407,20 @@ func _update_unit_positions():
 		highlight.position = pos
 		units_hightlights.append(highlight)
 
-func get_unit_at(pos: Vector2i) -> Unit:
+		var unit_properties = unit_properties_scene.instantiate()
+		unit_properties_parent.add_child(unit_properties)
+		unit_properties.position = unit_pos
+		unit_properties.set_properties(unit)
+		unit_properties_objects.append(unit_properties)
+
+
+func get_unit_at(from: Unit, pos: Vector2i) -> Array:
 	for unit in units_array:
 		if unit.current_position == pos:
-			return unit
-	return null
+			if unit.team != from.team:
+				return [teams_knowledge[from.team].enemy_positions[unit].last_seen == 0, unit]
+			return [true, unit]
+	return [true, null]
 
 func get_moves(unit: Unit, from: Vector2i) -> Array:
 	var speed = unit.get_unit_speed()
@@ -294,15 +438,19 @@ func get_moves(unit: Unit, from: Vector2i) -> Array:
 	
 	speed -= initial_penalty
 
-	var visited: Dictionary = {from: speed}
-	var queue = [Vector3(from.x, from.y, speed)]
+	# visited is point: [[path to point], speed]
+	var visited: Dictionary = {from: [[from], speed]}
+	# queue is [[[path_to_current], (Vector3)current_data]]
+	var queue = [[[from], Vector3(from.x, from.y, speed)]]
 
 	while len(queue) > 0:
-		var current = queue.pop_front()
+		var element = queue.pop_front()
+		var current = element[1]
+		var path: Array = element[0]
 		var pos = Vector2i(current.x, current.y)
 		var remaining = current.z
 
-		if remaining == 0:
+		if remaining <= 0:
 			continue
 
 		var pos_altitude = game_map.get_height_at(pos)
@@ -337,11 +485,23 @@ func get_moves(unit: Unit, from: Vector2i) -> Array:
 
 			if new_remaining < 0:
 				continue
-			
-			if visited.has(new_pos) and visited[new_pos] >= new_remaining:
+
+			if visited.has(new_pos) and visited[new_pos][1] >= new_remaining:
 				continue
 			
-			visited[new_pos] = new_remaining
-			queue.append(Vector3(new_pos.x, new_pos.y, new_remaining))
+			var new_path = path + [new_pos]
 
-	return visited.keys()
+			var unit_at = get_unit_at(unit, new_pos)
+			if unit_at[0] and unit_at[1] != null and unit_at[1] != unit:
+				if unit_at[1].team != unit.team:
+					visited[new_pos] = [new_path, remaining]
+				continue
+			
+			visited[new_pos] = [new_path, new_remaining]
+			queue.append([new_path, Vector3(new_pos.x, new_pos.y, new_remaining)])
+
+	var result = []
+	for key in visited.keys():
+		result.append([key, visited[key][0]])
+
+	return result

@@ -22,10 +22,11 @@ var _hovered_selector: MoveSelector = null
 var _possible_moves
 
 func get_move() -> AgentMove:
-	# _possible_moves = controller.get_moves(unit, unit.current_position)
-	
-	_possible_moves = HexagonMath.get_cells_between(unit.current_position, \
-		unit.current_position + Vector2i(1, -1))
+	var moves = controller.get_moves(unit, unit.current_position)
+	_possible_moves = moves.map(func(p): return p[0])
+
+	# _possible_moves = HexagonMath.get_cells_between(unit.current_position, \
+	# 	unit.current_position + Vector2i(10, -7))
 	build_selectors(_possible_moves)
 
 	_current_selector_state = SelectorState.SELECTING_MOVE
@@ -39,7 +40,9 @@ func get_move() -> AgentMove:
 
 	await move_selected
 
-	return AgentMove.new(_selected_pos, _selected_attack)
+	var entry_path = moves.filter(func(m): return m[0] == _selected_pos)[0][1]
+ 
+	return AgentMove.new(_selected_pos, entry_path, _selected_attack)
 
 func destroy_selectors():
 	for move in _selectors:
@@ -50,12 +53,12 @@ func build_selectors(moves: Array):
 	destroy_selectors()
 
 	for move in moves:
-		var unit_at = controller.get_unit_at(move)
-		if unit_at != null and unit_at != unit and unit_at.team == unit.team:
+		var unit_at = controller.get_unit_at(unit, move)
+		if unit_at[0] and unit_at[1] != null and unit_at[1] != unit and unit_at[1].team == unit.team:
 			continue
 
 		var selector: MoveSelector = move_selector_scene.instantiate() as MoveSelector
-		selector.initialize(move, unit_at != null and unit_at != unit)
+		selector.initialize(move, unit_at[0] and unit_at[1] != null and unit_at[1] != unit)
 
 		add_child(selector)
 
@@ -68,9 +71,10 @@ func build_approach_selectors():
 
 	for dir in directions:
 		var pos = _selected_attack + dir
-		if pos in _possible_moves \
-			and controller.get_unit_at(pos) == null:
-			moves.append(pos)
+		if pos in _possible_moves:
+			var unit_at = controller.get_unit_at(unit, pos)
+			if not unit_at[0] or unit_at[1] in [null, unit]:
+				moves.append(pos)
 
 	build_selectors(moves)
 

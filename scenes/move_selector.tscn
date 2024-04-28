@@ -18,11 +18,11 @@ move_color = Color(0.184314, 0.890196, 1, 1)
 
 [node name="Sprite" type="Sprite3D" parent="."]
 transform = Transform3D(0.39, 0, 0, 0, -1.70474e-08, 0.39, 0, -0.39, -1.70474e-08, 0, 0.001, 0)
-sorting_offset = 0.001
+sorting_offset = 1.0
 modulate = Color(1, 1, 1, 0.498039)
 texture = ExtResource("2_mif2o")
 
 [node name="CollisionPolygon3D" type="CollisionPolygon3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
 depth = 0.01
-polygon = PackedVector2Array(-1, -0.575, -1, 0.575, 0, 1.15, 1, 0.575, 1, -0.575, 0, -1.15)
+polygon = PackedVector2Array(-1, 0.575, 0, 1.15, 1, 0.575, 1, -0.575, 0, -1.15, -1, -0.575)

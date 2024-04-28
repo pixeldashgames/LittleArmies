@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3 uid="uid://des0k65qdru11"]
+
+[ext_resource type="Script" path="res://scripts/unit_properties.gd" id="1_u2baq"]
+
+[node name="UnitProperties" type="Node3D"]
+script = ExtResource("1_u2baq")
+
+[node name="Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.25, 0)
+pixel_size = 0.001
+billboard = 1
+fixed_size = true
+text = "➕100
+🤕50
+🍗200"
+font_size = 64
