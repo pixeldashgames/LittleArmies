@@ -1,6 +1,6 @@
 [gd_scene load_steps=18 format=3 uid="uid://cmb1sw3nnmtwu"]
 
-[ext_resource type="Script" path="res://scripts/GameMap.gd" id="1_gtvt7"]
+[ext_resource type="Script" path="res://scripts/game_map.gd" id="1_gtvt7"]
 [ext_resource type="PackedScene" uid="uid://fodkdr6i5mkn" path="res://scenes/perlin_map_generator.tscn" id="2_gej0x"]
 [ext_resource type="ArrayMesh" uid="uid://cyofur41yukfp" path="res://art/terrain/hex_water_detail.obj" id="3_26fsa"]
 [ext_resource type="ArrayMesh" uid="uid://dqccmyqfqqth1" path="res://art/terrain/hex_rock_detail.obj" id="4_fiqrw"]

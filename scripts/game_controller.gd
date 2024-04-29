@@ -38,9 +38,55 @@ class Knowledge:
 	func set_cell_visibility(source, cell: Vector2i, visibility: float):
 		cells_visibility[cell.y][cell.x][source] = visibility
 
+class Castle:
+	var name: String
+	var position: Vector2i
+	var supplies: int
+	var owner_team: int
+	var claim_progress: float
+
+	@warning_ignore("shadowed_variable")
+	func _init(name: String, pos: Vector2i, owner: int, supplies: int):
+		self.name = name
+		self.position = pos
+		self.owner_team = owner
+		self.supplies = supplies
+		self.claim_progress = 1 if owner >= 0 else 0
+
+	func claim(by: Unit) -> CastleClaimResult:
+		if owner_team == -1:
+			if by.team == 0:
+				claim_progress = clamp(claim_progress + 0.5, 0, 1)
+			else:
+				claim_progress = clamp(claim_progress - 0.5, 0, 1)
+			if abs(claim_progress) == 1:
+				claim_progress = 1
+				owner_team = by.team
+				return CastleClaimResult.CONQUERED
+		elif owner_team != by.team:
+			claim_progress = clamp(claim_progress - 0.5, 0, 1)
+			if claim_progress == 0:
+				owner_team = -1
+				return CastleClaimResult.NEUTRALIZED
+		return CastleClaimResult.IN_PROGRESS
+			
+
+enum CastleClaimResult {
+	CONQUERED,
+	NEUTRALIZED,
+	IN_PROGRESS
+}
+
+enum GameOverResult {
+	ATTACKERS_WON_BY_CONQUEST,
+	ATTACKERS_WON_BY_ELIMINATION,
+	DEFENDERS_WON_BY_ELIMINATION,
+	NOT_OVER
+}
+
 const forest_speed_penalty: float = 1.5
 const mountain_speed_penalty: float = 2.5
-const water_speed_penalty: float = 2
+const water_speed_penalty: float = 1.5
 const max_altitude_difference: float = 1.5
 const max_altitude_difference_penalty_multiplier: float = 2.5
 const altitude_penalty_curve: float = 2.4
@@ -63,26 +109,28 @@ const altitude_difference_multiplier_range := Vector2(0, 1.2)
 
 const castle_vigilance_range: float = 5
 
-signal finish_update_visibility
-
 @export var morale_starting_values: Array[float]
 @export var count_starting_values: Array[int]
-@export var food_starting_values: Array[int]
+@export var supplies_starting_values: Array[int]
+@export var castle_supplies_starting_values: Array[int]
+@export var unit_names: Array[String]
 
 @export var unit_scene: PackedScene
 @export var player_scene: PackedScene
 @export var highlight_scene: PackedScene
 @export var unit_properties_scene: PackedScene
+@export var castle_properties_scene: PackedScene
 @export var teams_unit_counts: Array[int] = [5, 5]
 
 @onready var game_map: GameMap = $GameMap
 @onready var units_parent: Node3D = $Units
 @onready var highlights_parent: Node3D = $Highlights
 @onready var unit_properties_parent: Node3D = $UnitProperties
+@onready var castle_properties_parent: Node3D = $CastleProperties
 @onready var time_between_turns: Timer = $TimeBetweenTurns
 
 @onready var camera:Camera3D = $Camera3D
-@onready var knowledge_updater = $KnowledgeUpdater
+@onready var hex_math = $HexMath
 @onready var terrain_renderer = $TerrainRenderer
 @onready var underground_renderer = $UndergroundRenderer
 @onready var water_renderer = $WaterRenderer
@@ -94,21 +142,30 @@ var units_array: Array[Unit] = []
 var units_hightlights: Array = []
 var unit_properties_objects: Array = []
 
+var castle_properties_objects: Array = []
+
 var teams_knowledge: Array[Knowledge] = []
 
-var teams_finished_update = 0
-var total_updates = 0
+var castles: Array[Castle] = []
 
 func _ready():
 	game_map.generate()
 	_run_full_render()
 	_generate_units()
 
+	print(hex_math.GetCellsBetween(Vector2i(3, 0), Vector2i(3, 5)))
+
 	for team in range(len(teams_unit_counts)):
 		teams_knowledge.append(\
 			Knowledge.new(game_map.map_generator.width,\
 				game_map.map_generator.height,\
 				units_array.filter(func(u): return u.team != team)))
+
+	for i in range(len(game_map.castles_array)):
+		var pos = game_map.castles_array[i]
+		# 65 = 'A'
+		var castle_letter = char(65 + i)
+		castles.append(Castle.new(castle_letter, pos, 0, castle_supplies_starting_values.pick_random()))
 
 	_update_castles_visibility()
 
@@ -148,26 +205,59 @@ func _render_all_shadows(team: int):
 	water_renderer.change_visibility(visibility_function)
 	forests_renderer.change_visibility(visibility_function)
 	mountains_renderer.change_visibility(visibility_function)
-			
+
 func _game_loop():
-	while not _is_game_over():
-		for unit in units_array:
+	while _is_game_over() == GameOverResult.NOT_OVER:
+		var units = units_array.duplicate()
+		for unit in units:
+			if not is_instance_valid(unit) or not units_array.has(unit):
+				continue
+
 			@warning_ignore("redundant_await")
 			var move = await unit.agent.get_move()
 			_perform_move(unit, move)
+
+			if not unit.is_dead():
+				var castle = castles.filter(func(c): return c.position == unit.current_position)
+
+				var in_castle = len(castle) != 0
+
+				unit.end_of_day(in_castle and castle[0].owner_team == unit.team)
+				unit.decrease_supplies()
+
+				unit.desert_units()
+				if not unit.is_dead():
+					if in_castle:
+						var this_castle: Castle = castle[0]
+
+						var result := this_castle.claim(unit)
+
+						if result == CastleClaimResult.CONQUERED:
+							unit.take_castle()
+							Logger.log_take_castle(unit, this_castle)
+						elif result == CastleClaimResult.NEUTRALIZED:
+							unit.neutralized_castle()	
+						
+						if this_castle.owner_team == unit.team:
+							this_castle.supplies -= unit.pickup_supplies(this_castle.supplies)
+
+					_update_knowledge(unit)
+
 			time_between_turns.start()
-			_update_knowledge(unit)
 			_update_units(0)
+			_update_castles()
 			_render_all_shadows(0)
-			unit.decrease_morale()
-			unit.decrease_supplies()
+
+			if _is_game_over() != GameOverResult.NOT_OVER:
+				break
+
 			if not time_between_turns.is_stopped():
 				await time_between_turns.timeout
+	
+	finish_game()
 
-func finish_update_visibility_map():
-	teams_finished_update += 1
-	if teams_finished_update >= total_updates:
-		finish_update_visibility.emit()
+func finish_game():
+	print("game over by" + str(_is_game_over()))
 
 func get_cells_in_range(from: Vector2i, max_range: float):
 	var cells_in_range = [from]
@@ -194,7 +284,7 @@ func get_cells_in_range(from: Vector2i, max_range: float):
 
 	return cells_in_range	
 
-func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, this_height: float, team: int):
+func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, cells_in_between: Array, this_height: float, team: int):
 	if from == c:
 		teams_knowledge[team].set_cell_visibility(source, from, 1)
 		return
@@ -209,7 +299,7 @@ func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, this_height
 	else:
 		visibility = plains_initial_visibility_multiplier
 
-	var cells_in_between = HexagonMath.get_cells_between(from, c)
+	# var cells_in_between = HexagonMath.get_cells_between(from, c)
 
 	var height_change_point = this_height
 	var increased_height = false
@@ -254,13 +344,15 @@ func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, this_height
 
 func _update_visibility_for_source(source, from: Vector2i, height: float, team: int, vigilance_range: float):
 	var cells_in_range = get_cells_in_range(from, vigilance_range)
-	for c in cells_in_range:
-		update_visibility_for_cell(source, from, c, height, team)
+	var in_between_for_each_cell = hex_math.GetAllCellsBetween(from, cells_in_range)
+
+	for i in range(len(cells_in_range)):
+		update_visibility_for_cell(source, from, cells_in_range[i], in_between_for_each_cell[i], height, team)
 
 func _update_castles_visibility():
-	for castle in game_map.castles_array:
-		var height = game_map.get_height_at(castle)
-		_update_visibility_for_source("castle", castle, height, 0, castle_vigilance_range)
+	for castle in castles:
+		var height = game_map.get_height_at(castle.position)
+		_update_visibility_for_source(castle, castle.position, height, 0, castle_vigilance_range)
 
 func _update_knowledge(unit: Unit):
 	teams_knowledge[unit.team].reset_visibility_map_for(unit)
@@ -270,20 +362,23 @@ func _update_knowledge(unit: Unit):
 
 	_update_visibility_for_source(unit, unit.current_position, height, unit.team, vigilance_range)
 
-	for enemy in units_array.filter(func(u): return u.team != unit.team):
-		var pos = enemy.current_position
-		var chance = enemy.get_visibility_chance() * teams_knowledge[unit.team].get_visibility_at(pos)
-		var enemy_knowledge = teams_knowledge[unit.team].enemy_positions[enemy]
+	_update_units_knowledge()
+
+func _update_units_knowledge():
+	for u in units_array:
+		var pos = u.current_position
+		var chance = u.get_visibility_chance() * teams_knowledge[1 - u.team].get_visibility_at(pos)
+		var unit_knowledge = teams_knowledge[1 - u.team].enemy_positions[u]
 		if chance > 0:
-			if enemy_knowledge.last_seen == 0:
-				enemy_knowledge.position = pos
+			if unit_knowledge.last_seen == 0:
+				unit_knowledge.position = pos
 			elif randf() <= chance:
-				enemy_knowledge.position = pos
-				enemy_knowledge.last_seen = 0
-			elif enemy_knowledge.last_seen != -1:
-				enemy_knowledge.last_seen += 1
-		elif enemy_knowledge.last_seen != -1:
-			enemy_knowledge.last_seen += 1
+				unit_knowledge.position = pos
+				unit_knowledge.last_seen = 0
+			elif unit_knowledge.last_seen != -1:
+				unit_knowledge.last_seen += 1
+		elif unit_knowledge.last_seen != -1:
+			unit_knowledge.last_seen += 1
 				
 func _perform_move(unit: Unit, move: Agent.AgentMove):
 	var enemy_positions = units_array.filter(func(u): return u.team != unit.team)\
@@ -310,10 +405,20 @@ func _perform_battle(unit_a: Unit, unit_b: Unit, advantage_unit: int):
 	var unit_a_damage = unit_a.get_damage(unit_a_terrain, unit_b_terrain, unit_a_height, unit_b_height, advantage_unit == 0)
 	var unit_b_damage = unit_b.get_damage(unit_b_terrain, unit_a_terrain, unit_b_height, unit_a_height, advantage_unit == 1)
 
-	unit_a.kill_units(unit_b_damage[0])
-	unit_a.injure_units(unit_b_damage[1])
-	unit_b.kill_units(unit_a_damage[0])
-	unit_b.injure_units(unit_a_damage[1])
+	var a_deaths = unit_a.kill_units(ceili(unit_b_damage[0]))
+	var a_injured = unit_a.injure_units(ceili(unit_b_damage[1]))
+	var b_deaths = unit_b.kill_units(ceili(unit_a_damage[0]))
+	var b_injured = unit_b.injure_units(ceili(unit_a_damage[1]))
+
+	unit_b.damage_dealt_to_enemy(a_deaths, a_injured)
+	unit_a.damage_dealt_to_enemy(b_deaths, b_injured)
+
+	teams_knowledge[unit_a.team].enemy_positions[unit_b].last_seen = 0
+	teams_knowledge[unit_b.team].enemy_positions[unit_a].last_seen = 0
+	teams_knowledge[unit_a.team].enemy_positions[unit_b].position = unit_b.current_position
+	teams_knowledge[unit_b.team].enemy_positions[unit_a].position = unit_a.current_position
+
+	Logger.log_combat(unit_a, unit_b, b_deaths, b_injured, a_deaths, a_injured)
 
 func destroy_unit(unit: Unit):
 	units_array.erase(unit)
@@ -325,8 +430,15 @@ func destroy_unit(unit: Unit):
 
 	unit.queue_free()
 
-func _is_game_over() -> bool:
-	return false
+func _is_game_over() -> GameOverResult:
+	if len(units_array.filter(func(u): return u.team == 0)) == 0:
+		return GameOverResult.ATTACKERS_WON_BY_ELIMINATION
+	elif len(units_array.filter(func(u): return u.team == 1)) == 0:
+		return GameOverResult.DEFENDERS_WON_BY_ELIMINATION
+	elif len(castles.filter(func(c): return c.owner_team == 0)) == 0:
+		return GameOverResult.ATTACKERS_WON_BY_CONQUEST
+	else:
+		return GameOverResult.NOT_OVER
 
 func _generate_units():
 	var max_units_per_row = 1 + game_map.get_playable_size().x / unit_separation
@@ -359,9 +471,30 @@ func _generate_unit_at(pos: Vector2i, team: int, is_player: bool):
 	units_parent.add_child(unit)
 	if team == 0:
 		unit.rotation_degrees.y = 180
-	unit.initialize(self, pos, team, count_starting_values.pick_random(), \
-		morale_starting_values.pick_random(), 0, food_starting_values.pick_random())
+	var unit_name = unit_names.pick_random()
+	unit_names.erase(unit_name)
+	unit.initialize(self, unit_name, pos, team, count_starting_values.pick_random(), \
+		morale_starting_values.pick_random(), 0, supplies_starting_values.pick_random())
 	units_array.append(unit)
+
+func _update_castles():
+	for prop in castle_properties_objects:
+		prop.queue_free()
+	castle_properties_objects.clear()
+
+	for castle in castles:
+		if castle.owner_team and castle.claim_progress != 1:
+			# stop siege if no enemy is in the castle
+			var enemy_in_castle = units_array.filter(func(u): return u.current_position == castle.position and u.team != castle.owner_team)
+			if len(enemy_in_castle) == 0:
+				castle.claim_progress = 1
+
+		var pos = game_map.get_game_pos(castle.position)
+		var castle_properties = castle_properties_scene.instantiate()
+		castle_properties_parent.add_child(castle_properties)
+		castle_properties.position = pos
+		castle_properties.set_properties(castle)
+		castle_properties_objects.append(castle_properties)
 
 func _update_units(player_team: int):
 	for highlight in units_hightlights:
@@ -372,15 +505,14 @@ func _update_units(player_team: int):
 		prop.queue_free()
 	unit_properties_objects.clear()
 
-	var queued_for_elimination = []
+	var units_queued_to_destroy = []
 
-	for unit in units_array:
-		if unit.is_dead():
-			queued_for_elimination.append(unit)
-			continue
-	
-	for unit in queued_for_elimination:
-		destroy_unit(unit)
+	for u in units_array:
+		if u.is_dead():
+			units_queued_to_destroy.append(u)
+
+	for u in units_queued_to_destroy:
+		destroy_unit(u)
 
 	for unit in units_array:
 		if player_team != -1 and unit.team != player_team:
@@ -413,7 +545,6 @@ func _update_units(player_team: int):
 		unit_properties.set_properties(unit)
 		unit_properties_objects.append(unit_properties)
 
-
 func get_unit_at(from: Unit, pos: Vector2i) -> Array:
 	for unit in units_array:
 		if unit.current_position == pos:
@@ -437,6 +568,9 @@ func get_moves(unit: Unit, from: Vector2i) -> Array:
 		initial_penalty = 0
 	
 	speed -= initial_penalty
+
+	if speed < mountain_speed_penalty:
+		speed = mountain_speed_penalty
 
 	# visited is point: [[path to point], speed]
 	var visited: Dictionary = {from: [[from], speed]}

@@ -5,9 +5,9 @@ const morale_effect_curve_on_speed := 0.5
 const max_count_that_affects_speed := 100
 const count_effect_curve_on_speed := 3.6
 const injured_percentage_effect_curve_on_speed := 0.4
-const morale_effect_range = Vector2(0, 1)
+const morale_effect_range = Vector2(0.5, 1)
 const count_effect_range = Vector2(0.5, 1)
-const injured_effect_range = Vector2(0, 1)
+const injured_effect_range = Vector2(0.5, 1)
 
 const max_unit_vigilance := 5.0
 const max_count_that_affects_vigilance := 50
@@ -31,34 +31,60 @@ const height_increase_effect_curve_on_damage := 2.0
 const height_decrease_effect_curve_on_damage := 0.5
 const height_difference_effect_range := Vector2(0, 1.5)
 
-const max_supplies = 500
+const max_supplies = 1500
 
-# do random damage with a distribution
+const missed_supply_morale_penalty = 0.005
+const killed_unit_morale_penalty = 0.01
+const injured_unit_morale_penalty = 0.005
+const picked_up_supplies_morale_boost = 0.001
+const expected_daily_morale_change = -0.01
+const expected_daily_morale_change_on_castle = 0.05
+const enemy_killed_morale_boost = 0.025
+const enemy_injured_morale_boost = 0.015
+const castle_taken_morale_boost = 0.25
+const castle_neutralized_morale_boost = 0.15
+
+const army_percentage_desertion_curve_on_morale = 5
+const morale_needed_for_desertion = 0.7
+
+const injured_death_chance = 0.1
+const injured_recovery_chance = 0.15
 
 const terrain_advantage = {
 	TerrainType.PLAIN: {
 		TerrainType.PLAIN: 1,
 		TerrainType.FOREST: 0.8,
 		TerrainType.MOUNTAIN: 0.6,
-		TerrainType.WATER: 1.5
+		TerrainType.WATER: 1.5,
+		TerrainType.CASTLE: 0.5
 	},
 	TerrainType.FOREST: {
 		TerrainType.PLAIN: 1.2,
 		TerrainType.FOREST: 0.8,
 		TerrainType.MOUNTAIN: 0.8,
-		TerrainType.WATER: 1.3
+		TerrainType.WATER: 1.3,
+		TerrainType.CASTLE: 0.5
 	},
 	TerrainType.MOUNTAIN: {
 		TerrainType.PLAIN: 1.4,
 		TerrainType.FOREST: 0.8,
 		TerrainType.MOUNTAIN: 0.9,
-		TerrainType.WATER: 1.5
+		TerrainType.WATER: 1.5,
+		TerrainType.CASTLE: 0.5
 	},
 	TerrainType.WATER: {
-		TerrainType.PLAIN: 0.6,
+		TerrainType.PLAIN: 0.8,
 		TerrainType.FOREST: 0.7,
 		TerrainType.MOUNTAIN: 0.5,
-		TerrainType.WATER: 1
+		TerrainType.WATER: 1,
+		TerrainType.CASTLE: 0.5
+	},
+	TerrainType.CASTLE: {
+		TerrainType.PLAIN: 1.5,
+		TerrainType.FOREST: 1.4,
+		TerrainType.MOUNTAIN: 1.3,
+		TerrainType.WATER: 2,
+		TerrainType.CASTLE: 1
 	}
 }
 
@@ -66,10 +92,13 @@ enum TerrainType {
 	PLAIN = 0,
 	FOREST = 1,
 	MOUNTAIN = 2,
-	WATER = 3
+	WATER = 3,
+	CASTLE = 4
 }
 
 @onready var agent: Agent = $Agent
+
+var unit_name: String
 
 var current_position: Vector2i
 
@@ -80,38 +109,92 @@ var morale: float
 var injured: int
 var supplies: int
 
-const sqrt2pi = sqrt(2 * PI)
+func normal_distribution(mean: float, std_dev: float):
+	var u1 = randf()
+	var u2 = randf()
+	var rand_std_normal = sqrt(-2.0 * log(u1)) * sin(2.0 * PI * u2)
+	var rand_normal = mean + std_dev * rand_std_normal
+	return rand_normal
 
-func normal_distribution(x: float, m: float, o_sqrd: float):
-	var o = sqrt(o_sqrd)
-	var first_factor = 1 / o * (sqrt2pi)
-	var second_factor = exp(-((x - m) ** 2) / (2 * o_sqrd))
+func desert_units():
+	if morale > morale_needed_for_desertion:
+		return
 
-	return first_factor * second_factor
+	var can_desert = count - injured
+	var morale_desertion_factor = 1 - morale / 0.7
+	var desertion_chance = ease(morale_desertion_factor, army_percentage_desertion_curve_on_morale)
+	desertion_chance = clamp(normal_distribution(desertion_chance, 0.05), 0, 1)
+	var desertion = roundi(can_desert * desertion_chance)
+	count -= desertion
 
-func end_of_day_morale_change():
+	if desertion > 0:
+		Logger.log_desertion(self, desertion)
+
+func end_of_day(in_castle: bool):
 	if supplies < count:
-		pass
+		change_morale(missed_supply_morale_penalty * (supplies - count))
+	change_morale(expected_daily_morale_change if not in_castle \
+					else expected_daily_morale_change_on_castle)
+	
+	# injured recovery / death
+	var dead := 0
+	var recovered := 0
+	for i in range(injured):
+		var random = randf()
+		if random < injured_death_chance:
+			dead += 1
+		elif random < injured_death_chance + injured_recovery_chance:
+			recovered += 1
 
-func decrease_morale(expected_value: float):
+	if dead > 0:
+		Logger.log_injured_died(self, dead)
+	if recovered > 0:
+		Logger.log_injured_recovered(self, recovered)
 
+	count -= dead
+	injured -= recovered + dead
+
+func change_morale(expected_change: float, deviation: float = 0.01):
+	morale = clamp(morale + normal_distribution(expected_change, deviation), 0, 1)
 
 func decrease_supplies():
 	supplies = max(0, supplies - count)
 
-func pickup_supplies():
-	supplies = max_supplies
+func take_castle():
+	change_morale(castle_taken_morale_boost)
+
+func neutralized_castle():
+	change_morale(castle_neutralized_morale_boost)
+
+func pickup_supplies(available: int):
+	# make castles deplete
+	var taken = min(available, max_supplies - supplies)
+
+	if taken == 0:
+		return 0
+
+	change_morale(picked_up_supplies_morale_boost * taken)
+	supplies += taken
+
+	return taken
 
 func kill_units(amount: int):
-	count = max(injured, count - amount)
+	amount = min(count - injured, amount)
+	count -= amount
+	change_morale(-killed_unit_morale_penalty * amount)
+	return amount
 
 func injure_units(amount: int):
-	injured = min(count, injured + amount)
+	amount = min(count - injured, amount)
+	injured += amount
+	change_morale(-injured_unit_morale_penalty * amount)
+	return amount
 
 func is_dead():
 	return count - injured <= 0
 
-func initialize(controller, unit_pos, unit_team, unit_count, unit_morale, unit_injured, unit_food_amount):
+func initialize(controller, u_name, unit_pos, unit_team, unit_count, unit_morale, unit_injured, unit_food_amount):
+	unit_name = u_name
 	current_position = unit_pos
 	team = unit_team
 	count = unit_count
@@ -125,6 +208,9 @@ func initialize(controller, unit_pos, unit_team, unit_count, unit_morale, unit_i
 		var anim_player: AnimationPlayer = model.find_child("AnimationPlayer")
 		if anim_player:
 			anim_player.play("Idle")
+
+func damage_dealt_to_enemy(killed: int, _injured: int):
+	change_morale(enemy_killed_morale_boost * killed + enemy_injured_morale_boost * _injured)
 
 # Returns [killed, injured]
 func get_damage(my_terrain: TerrainType, other_unit_terrain: TerrainType, my_height: float, other_unit_height: float, advantage: bool) -> Array[float]:
@@ -142,8 +228,12 @@ func get_damage(my_terrain: TerrainType, other_unit_terrain: TerrainType, my_hei
 
 	var total_modifier_damage_modifier = morale_modifier * height_difference_modifier * terrain_modifier * advantaje_modifier
 
-	var killed = effective_count * max_kill_chance * total_modifier_damage_modifier
-	var _injured = effective_count * max_injure_chance * total_modifier_damage_modifier
+	var killed: float = effective_count * max_kill_chance * total_modifier_damage_modifier
+	var _injured: float = effective_count * max_injure_chance * total_modifier_damage_modifier
+
+	killed *= normal_distribution(1, 0.1)
+	_injured *= normal_distribution(1, 0.1)
+
 	return [killed, _injured]
 
 func get_vigilance_range() -> float:

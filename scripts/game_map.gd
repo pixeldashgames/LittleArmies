@@ -13,7 +13,8 @@ enum TerrainType {
 	PLAIN = 0,
 	FOREST = 1,
 	MOUNTAIN = 2,
-	WATER = 3
+	WATER = 3,
+	CASTLE = 4
 }
 
 @export var castles_count: int = 3
@@ -80,6 +81,8 @@ func get_terrain_at(pos: Vector2i) -> TerrainType:
 		return TerrainType.MOUNTAIN
 	elif has_forest_in(pos):
 		return TerrainType.FOREST
+	elif has_castle_in(pos):
+		return TerrainType.CASTLE
 	else:
 		return TerrainType.PLAIN
 
