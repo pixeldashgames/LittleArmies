@@ -25,7 +25,8 @@ internal enum IntentionAction
     StayClose,
     Wait,
     ConquerTower,
-    Move
+    Move,
+    GetSuplies
 }
 
 internal enum TerrainType
