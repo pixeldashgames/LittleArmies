@@ -21,7 +21,7 @@ public partial class SmartAgentInterface : Node
 
     private (IntentionAction, object?)? orderedAction;
 
-    public Godot.Collections.Array GetMove(Dictionary thisUnit, Array<Dictionary> otherUnits, Vector2I mapMid, Array<Dictionary> castles, Callable getNeighbours, Callable getAdjacents, Callable getTerrainAt)
+    public Godot.Collections.Array GetMove(Dictionary thisUnit, Array<Dictionary> otherUnits, Array<Dictionary> castles, Vector2I mapMid, Callable getNeighbours, Callable getAdjacents, Callable getTerrainAt)
     {
         myTroop = DictToTroop(thisUnit);
 
@@ -74,8 +74,11 @@ public partial class SmartAgentInterface : Node
         Godot.Collections.Array getAttackResult() {
             var enemy = ((Troop)action.Item2!).Position;
             var enemyPos = new Vector2I(enemy.Item1, enemy.Item2);
-            AStar attackAStar = new(myPos, enemyPos, p => p == enemyPos, getNeighboursFunc);
-            var attackPos = attackAStar.FindPath()[0].GetPosition();
+            var attackAStarResult = AStar.Find(myPos, enemyPos, p => p == enemyPos, getNeighboursFunc).ToArray();
+
+            GD.PrintS("A* result:\n", string.Join(',', attackAStarResult));
+
+            var attackPos = attackAStarResult.Length == 1 ? attackAStarResult[0] : attackAStarResult[1];
 
             if (attackPos == enemyPos)
             {
@@ -85,7 +88,7 @@ public partial class SmartAgentInterface : Node
 
                 var entry_path = neighbourPaths.First(n => n.neigh == attack_from).path;
 
-                return [entry_path, attack_from, true];
+                return [entry_path, attackPos, true];
             }
             else
             {
@@ -101,9 +104,13 @@ public partial class SmartAgentInterface : Node
                 return [new Array<Vector2I> { myPos }, myPos, false];
             case IntentionAction.Move:
                 var movePos = mapMid;
-                AStar moveAStar = new(myPos, movePos, p => (p - movePos).Length() <= 6, getNeighboursFunc);
-                var moveStep = moveAStar.FindPath()[0].GetPosition();
+                GD.PrintS("Starting A* from Move, mapMid =", mapMid);
 
+                var aStarResult = AStar.Find(myPos, movePos, p => (p - movePos).Length() <= 6, getNeighboursFunc).ToArray();
+
+                GD.PrintS("A* result:\n", string.Join(',', aStarResult));
+
+                var moveStep = aStarResult.Length == 1? aStarResult[0] : aStarResult[1];
 
                 if (troops.Any(t => {
                     var troopPos = new Vector2I(t.Position.Item1, t.Position.Item2);
@@ -111,35 +118,46 @@ public partial class SmartAgentInterface : Node
                 })) {
                     var moveAdj = getAdjacentsFunc(moveStep)
                         .Where(p => neighbourPaths.Any(n => n.neigh == p)).ToArray();
-                    
+
                     var r = new Random();
 
                     moveStep = moveAdj[r.Next() % moveAdj.Length];
 
                     var moveP = neighbourPaths.First(n => n.neigh == moveStep).path;
 
-                    return [moveP, moveStep, false];
+                    var ret = new Godot.Collections.Array { moveP, moveStep, false };
+
+                    return ret;
                 }
 
                 var movePath = neighbourPaths.First(n => n.neigh == moveStep).path;
 
-                return [movePath, movePos, false];
+                var retS = new Godot.Collections.Array { movePath, moveStep, false };
+
+                GD.Print(retS);
+
+                return retS;
             case IntentionAction.ConquerTower:
+                GD.PrintS("Starting A* from ConquerTower, target =", ((Tower)action.Item2!).ToString());
                 var towerTarget = ((Tower)action.Item2!).Position;
+
                 var towerPos = new Vector2I(towerTarget.Item1, towerTarget.Item2);
-                AStar towerAStar = new(myPos, towerPos, p => p == towerPos, getNeighboursFunc);
-                var stepPos = towerAStar.FindPath()[0].GetPosition();
+                var towerAStarResult = AStar.Find(myPos, towerPos, p => p == towerPos, getNeighboursFunc).ToArray();
+
+                var stepPos = towerAStarResult.Length == 1 ? towerAStarResult[0] : towerAStarResult[1];
 
                 var path = neighbourPaths.First(n => n.neigh == stepPos).path;
 
                 return [path, stepPos, false];
             case IntentionAction.Attack:
+                GD.PrintS("Starting A* from Attack, target =", ((Troop)action.Item2!).ToString());
                 return getAttackResult();
             case IntentionAction.StayClose:
+                GD.PrintS("Starting A* from StayClose, target =", ((Troop)action.Item2!).ToString());
                 var ally = ((Troop)action.Item2!).Position;
                 var allyPos = new Vector2I(ally.Item1, ally.Item2);
-                AStar stayCloseAStar = new(myPos, allyPos, p => (p - allyPos).Length() <= 4, getNeighboursFunc);
-                var stayClosePos = stayCloseAStar.FindPath()[0].GetPosition();
+                var stayCloseAStarResult = AStar.Find(myPos, allyPos, p => (p - allyPos).Length() <= 4, getNeighboursFunc).ToArray();
+                var stayClosePos = stayCloseAStarResult.Length == 1 ? stayCloseAStarResult[0] : stayCloseAStarResult[1];
 
                 if (stayClosePos == allyPos)
                 {
@@ -161,6 +179,7 @@ public partial class SmartAgentInterface : Node
                     return [stayClosePath, stayClosePos, false];
                 }
             case IntentionAction.Retreat:
+                GD.PrintS("Starting A* from Retreat, from =", ((Troop)action.Item2!).ToString());
                 var closestAllies = troops
                     .Where(t => t.Defenders == myTroop.Defenders)
                     .Select(t => new Vector2I(t.Position.Item1, t.Position.Item2))
@@ -171,8 +190,8 @@ public partial class SmartAgentInterface : Node
 
                 var closestAlly = closestAllies[0];
 
-                AStar retreatAStar = new(myPos, closestAlly, p => p == closestAlly, getNeighboursFunc);
-                var retreatPos = retreatAStar.FindPath()[0].GetPosition();
+                var retreatAStarResult = AStar.Find(myPos, closestAlly, p => p == closestAlly, getNeighboursFunc).ToArray();
+                var retreatPos = retreatAStarResult.Length == 1 ? retreatAStarResult[0] : retreatAStarResult[1];
 
                 if (retreatPos == closestAlly)
                 {
@@ -235,11 +254,15 @@ public partial class SmartAgentInterface : Node
         var pos = (Vector2I)dict["position"];
         var towerTeam = (int)dict["owner_team"] == -1 ? !myTroop.Defenders : (int)dict["owner_team"] == 0;
 
-        return new Tower(
+        var tower = new Tower(
             (pos.X, pos.Y),
             (string)dict["name"],
             towerTeam
         );
+
+        GD.PrintS("Converting dict to Tower, from", dict.ToString(), "to", tower);
+
+        return tower;
     }
 
     private static TerrainType GDTerrainToTerrainType(int terrain)
@@ -269,7 +292,7 @@ public partial class SmartAgentInterface : Node
         else
             desire = DesireState.GoAhead;
 
-        return new Troop(
+        var troop = new Troop(
             (pos.X, pos.Y),
             (int)dict["count"],
             desire,
@@ -278,5 +301,9 @@ public partial class SmartAgentInterface : Node
             (string)dict["unit_name"],
             (int)dict["team"] == 0
         );
+
+        GD.PrintS("Converting dict to Troop, from", dict.ToString(), "to", troop);
+
+        return troop;
     }
 }

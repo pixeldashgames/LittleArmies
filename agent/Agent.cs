@@ -50,6 +50,11 @@ readonly struct Troop(
         return HashCode.Combine(Position);
     }
 
+    public override string ToString()
+    {
+        return $"Troop {name} with {troops} troops at position {position}";
+    }
+
 }
 
 readonly struct Tower((int, int) position, string name, bool defenders)
@@ -57,6 +62,11 @@ readonly struct Tower((int, int) position, string name, bool defenders)
     public string Name => name;
     public (int, int) Position => position;
     public bool OccupiedByDefenders => defenders;
+
+    public override string ToString()
+    {
+        return $"Tower {name} at position {position}";
+    }
 }
 
 static class Agent

@@ -2,108 +2,93 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+
 #nullable enable
-class Block((int, int) position, int turn = 1)
+
+public static class AStar
 {
+    private class NodePath(Vector2I node, IEnumerable<Vector2I> path, int turnsPassed) {
+        public Vector2I Node => node;
+        public IEnumerable<Vector2I> Path => path;
+        public int TurnsPassed => turnsPassed;
 
-    public (int, int) Position = position;
-    public Block? Parent;
-    public int GCost = turn;
-    public float ShortestPath = float.MaxValue;
-
-    public Vector2I GetPosition()
-    {
-        return new Vector2I(Position.Item1, Position.Item2);
-    }
-}
-
-class AStar(Vector2I start, Vector2I end, Func<Vector2I, bool> finishCondition, Func<Vector2I, IEnumerable<Vector2I>> getNeightbors, float w = 1f)
-{
-    private readonly Func<Vector2I, IEnumerable<Vector2I>> getNeightbors = getNeightbors;
-    private readonly float w = w;
-    private readonly Vector2I start = start;
-    private readonly Vector2I end = end;
-    private readonly Func<Vector2I, bool> finishCondition = finishCondition;
-
-    private Block CreateBlock(Vector2I position, int turn = 1)
-    {
-        return new Block((position.X, position.Y), turn);
-    }
-    private float W => w;
-    private List<Block> _openList = [];
-    private List<Block> _closedList = [];
-    private void UpdateDistance(Block neighbour, Block currentBlock, Block endBlock)
-    {
-        var newGCost = currentBlock.GCost + 1;
-        var newHCost = W * GetDistance(neighbour, endBlock);
-        var newCost = newGCost + newHCost;
-        if (!(newCost < neighbour.ShortestPath) && _openList.Contains(neighbour)) return;
-        neighbour.GCost = newGCost;
-        neighbour.ShortestPath = newCost;
-        neighbour.Parent = currentBlock;
-    }
-    private static float GetDistance(Block neighbour, Block endBlock)
-    {
-        // Calculate euclidian distance
-        return MathF.Sqrt(MathF.Pow(neighbour.Position.Item1 - endBlock.Position.Item1, 2)
-                          + MathF.Pow(neighbour.Position.Item2 - endBlock.Position.Item2, 2));
-    }
-
-
-    public List<Block> FindPath()
-    {
-        var (startBlock, endBlock) = (CreateBlock(start), CreateBlock(end));
-
-        startBlock.GCost = 0;
-        _openList.Add(startBlock);
-
-        while (_openList.Count > 0)
+        public NodePath Append(Vector2I node)
         {
-            var currentBlock = _openList[0];
-
-            GD.Print(currentBlock.GetPosition());
-
-            _openList.Remove(currentBlock);
-            _closedList.Add(currentBlock);
-
-            if (currentBlock.GetPosition() == endBlock.GetPosition())
-            {
-                return ReconstructPath(currentBlock);
-            }
-
-            var neighbours = getNeightbors(currentBlock.GetPosition()).Select(CreateBlock);
-            foreach (var neighbour in neighbours)
-            {
-                if (_closedList.Any(b => b.GetPosition() == neighbour.GetPosition()))
-                {
-                    continue;
-                }
-
-                if (finishCondition(neighbour.GetPosition()))
-                {
-                    return ReconstructPath(neighbour);
-                }
-
-                UpdateDistance(neighbour, currentBlock, endBlock);
-
-                if (_openList.Any(b => b.GetPosition() == neighbour.GetPosition())) continue;
-                _openList.Add(neighbour);
-            }
-            _openList.Sort((a, b) => a.ShortestPath.CompareTo(b.ShortestPath));
+            return new NodePath(node, Path.Append(node), TurnsPassed + 1);
         }
-        throw new Exception("Path not found");
     }
 
-    private static List<Block> ReconstructPath(Block currentBlock)
+    private class VisitedNode(Vector2I node, float weight) : IEquatable<VisitedNode>
     {
-        var path = new List<Block>();
-        while (currentBlock.Parent != null)
+        public Vector2I Node => node;
+        public float Weight => weight;
+
+        public bool Equals(VisitedNode? other)
         {
-            path.Add(currentBlock);
-            currentBlock = currentBlock.Parent;
+            if (other == null)
+                return false;
+
+            return other.Node == Node;
         }
-        path.Add(currentBlock);
-        path.Reverse();
-        return path;
+
+        public override bool Equals(object? obj)
+        {
+            return Equals(obj as VisitedNode);
+        }
+
+        public override int GetHashCode()
+        {
+            return Node.GetHashCode();
+        }
+
+    }
+
+    private static float GetNodeWeight(Vector2I node, Vector2I end, int turnsPassed, float w = 1f)
+    {
+        var g = turnsPassed + 1;
+        var h = w * (node - end).Length();
+        return g + h;
+    }
+
+    public static IEnumerable<Vector2I> Find(Vector2I start, Vector2I end, Func<Vector2I, bool> finishCondition, Func<Vector2I, IEnumerable<Vector2I>> getNeightbors, float w = 1f)
+    {
+        if (start == end)
+            return [start];
+
+        var visited = new HashSet<VisitedNode>
+        {
+            new(start, 0)
+        };
+
+        var queue = new PriorityQueue<NodePath, float>();
+        queue.Enqueue(new NodePath(start, [start], 0), 0);
+        
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+
+            foreach (var neighbour in getNeightbors(current.Node))
+            {               
+                if (finishCondition(neighbour))
+                    return current.Path.Append(neighbour);
+
+                var weight = GetNodeWeight(neighbour, end, current.TurnsPassed + 1, w);
+
+                var visitedNode = new VisitedNode(neighbour, weight);
+
+                var alreadyVisited = visited.FirstOrDefault(visitedNode.Equals);
+
+                if (alreadyVisited != null)
+                    if (alreadyVisited.Weight <= weight)
+                        continue;
+                    visited.Remove(alreadyVisited!);
+
+                visited.Add(visitedNode);
+
+                queue.Enqueue(current.Append(neighbour), weight);
+            }
+        }
+
+        throw new ArgumentException("Path not found from " + start + " to " + end);
     }
 }

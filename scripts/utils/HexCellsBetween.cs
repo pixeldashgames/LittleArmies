@@ -13,7 +13,7 @@ public partial class HexCellsBetween : Node
     {
         return (a % b + b) % b;
     }
-    private static Vector2 GetCellPos(Vector2I cell)
+    public static Vector2 GetCellPos(Vector2I cell)
     {
         return new Vector2(cell.X * 2 + Mod(cell.Y, 2), cell.Y * SQRT3);
     }
