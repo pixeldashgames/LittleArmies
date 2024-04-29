@@ -12,6 +12,11 @@ class ReceiveOrderResult:
 @onready var csharp_agent = $AgentInterface
 
 func get_move():
+    var params = get_csharp_params()
+
+    return csharp_agent.GetMove(params[0], params[1], params[2])
+    
+func get_csharp_params() -> Array:
     var this_unit = unit.to_dict(controller)
     var other_units = controller.units_array.filter(func(u): 
         if u == unit:
@@ -31,10 +36,12 @@ func get_move():
             return dict)
     var castles = controller.castles.map(func(c): c.to_dict())
 
-    return csharp_agent.GetMove(this_unit, other_units, castles)
-    
+    return [this_unit, other_units, castles]
+
 func receive_order(order: String) -> ReceiveOrderResult:
-    csharp_agent.ReceiveOrder(order);
+    var params = get_csharp_params()
+
+    csharp_agent.ReceiveOrder(order, params[0], params[1], params[2]);
 
     var result: Array = await csharp_agent.OnPromptReceived
 

@@ -8,6 +8,17 @@ using System.Threading.Tasks;
 
 namespace Agent;
 
+[System.Serializable]
+public class PromptException : System.Exception
+{
+    public PromptException() { }
+    public PromptException(string message) : base(message) { }
+    public PromptException(string message, System.Exception inner) : base(message, inner) { }
+    protected PromptException(
+        System.Runtime.Serialization.SerializationInfo info,
+        System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+}
+
 readonly struct Troop(
     (int, int) position,
     int troops,
@@ -219,16 +230,16 @@ static class Agent
             target = troops.FirstOrDefault(t => t.Name == targetName);
             target ??= towers.FirstOrDefault(t => t.Name == targetName);
             if (target == null)
-                throw new ArgumentException("Target not found");
+                throw new PromptException("Target not found");
         }
 
         switch (split[0].ToLower())
         {
             case "attack":
                 if (target is Troop troop && troop.Defenders == actualTroop.Defenders)
-                    throw new ArgumentException("Cannot attack an ally");
+                    throw new PromptException("Cannot attack an ally");
                 if (target is Tower tower && tower.OccupiedByDefenders == actualTroop.Defenders)
-                    throw new ArgumentException("Cannot attack an ally tower");
+                    throw new PromptException("Cannot attack an ally tower");
                 return target is Troop ? (IntentionAction.Attack, target!) : (IntentionAction.ConquerTower, target!);
             case "retreat":
                 return (IntentionAction.Retreat, target!);
@@ -239,7 +250,7 @@ static class Agent
             case "move":
                 return (IntentionAction.Move, target);
             default:
-                throw new ArgumentException("Command not found");
+                throw new PromptException("Command not found");
         }
     }
 

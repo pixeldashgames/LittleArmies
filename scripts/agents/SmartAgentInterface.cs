@@ -5,6 +5,7 @@ using Godot.Collections;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 #nullable enable 
 
@@ -20,13 +21,10 @@ public partial class SmartAgentInterface : Node
 
     private (IntentionAction, object?)? orderedAction;
 
-    public Array GetMove(Dictionary thisUnit, Array<Dictionary> otherUnits, Array<Dictionary> castles)
+    public Godot.Collections.Array GetMove(Dictionary thisUnit, Array<Dictionary> otherUnits, Array<Dictionary> castles)
     {
-
         myTroop = DictToTroop(thisUnit);
-
         var troops = otherUnits.Select(DictToTroop).ToList();
-
         var towers = castles.Select(DictToTower).ToList();
 
         (IntentionAction, object?) action;
@@ -44,9 +42,31 @@ public partial class SmartAgentInterface : Node
         // translate action to move
     }
 
-    public void ReceiveOrder(string prompt)
+    public async Task ReceiveOrder(string prompt, Dictionary thisUnit, Array<Dictionary> otherUnits, Array<Dictionary> castles)
     {
-        
+        myTroop = DictToTroop(thisUnit);
+        var troops = otherUnits.Select(DictToTroop).ToList();
+        var towers = castles.Select(DictToTower).ToList();
+
+        try
+        {
+            var result = await Agent.Agent.Nlp(prompt, myTroop, troops, towers);
+
+            orderedAction = result;
+        }
+        catch (PromptException e)
+        {
+            EmitSignal(SignalName.OnPromptReceived, false, e.Message);
+            return;
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr(e.Message);
+            EmitSignal(SignalName.OnPromptReceived, false, e.Message);
+            return;
+        }
+
+        EmitSignal(SignalName.OnPromptReceived, true, "");
     }
 
     public int GetDesire()
