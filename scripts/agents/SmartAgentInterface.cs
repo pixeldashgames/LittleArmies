@@ -4,8 +4,10 @@ using Godot;
 using Godot.Collections;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Array = Godot.Collections.Array;
 
 #nullable enable 
 
@@ -23,6 +25,8 @@ public partial class SmartAgentInterface : Node
 
     public Godot.Collections.Array GetMove(Dictionary thisUnit, Array<Dictionary> otherUnits, Array<Dictionary> castles, Vector2I mapMid, Callable getNeighbours, Callable getAdjacents, Callable getTerrainAt)
     {
+        // don't include moves to enemies
+
         myTroop = DictToTroop(thisUnit);
 
         var troops = otherUnits.Select(DictToTroop).ToList();
@@ -71,7 +75,32 @@ public partial class SmartAgentInterface : Node
 
         var neighbourPaths = getNeightboursFullFunc(myPos);
 
-        Godot.Collections.Array getAttackResult() {
+        IEnumerable<Vector2I> getValidAdjacents(Vector2I pos)
+        {
+            var moveAdj = getAdjacentsFunc(pos)
+                        .Where(p => neighbourPaths.Any(n => n.neigh == p) && !isTroopAt(p));
+
+            return moveAdj;
+        }
+
+        bool isTroopAt(Vector2I pos)
+        {
+            return troops.Any(t =>
+            {
+                var troopPos = new Vector2I(t.Position.Item1, t.Position.Item2);
+                return troopPos == pos;
+            })
+        }
+
+        T pickRandomElement<T>(IEnumerable<T> e)
+        {
+            var r = new Random();
+            var arr = e.ToArray();
+            return arr[r.Next() % arr.Length];
+        }
+
+        Godot.Collections.Array getAttackResult()
+        {
             var enemy = ((Troop)action.Item2!).Position;
             var enemyPos = new Vector2I(enemy.Item1, enemy.Item2);
             var attackAStarResult = AStar.Find(myPos, enemyPos, p => p == enemyPos, getNeighboursFunc).ToArray();
@@ -92,6 +121,9 @@ public partial class SmartAgentInterface : Node
             }
             else
             {
+                if (isTroopAt(attackPos))
+                    attackPos = pickRandomElement(getValidAdjacents(attackPos));
+
                 var entry_path = neighbourPaths.First(n => n.neigh == attackPos).path;
 
                 return [entry_path, attackPos, false];
@@ -110,29 +142,14 @@ public partial class SmartAgentInterface : Node
 
                 GD.PrintS("A* result:\n", string.Join(',', aStarResult));
 
-                var moveStep = aStarResult.Length == 1? aStarResult[0] : aStarResult[1];
+                var moveStep = aStarResult.Length == 1 ? aStarResult[0] : aStarResult[1];
 
-                if (troops.Any(t => {
-                    var troopPos = new Vector2I(t.Position.Item1, t.Position.Item2);
-                    return troopPos == moveStep;
-                })) {
-                    var moveAdj = getAdjacentsFunc(moveStep)
-                        .Where(p => neighbourPaths.Any(n => n.neigh == p)).ToArray();
-
-                    var r = new Random();
-
-                    moveStep = moveAdj[r.Next() % moveAdj.Length];
-
-                    var moveP = neighbourPaths.First(n => n.neigh == moveStep).path;
-
-                    var ret = new Godot.Collections.Array { moveP, moveStep, false };
-
-                    return ret;
-                }
+                if (isTroopAt(moveStep))
+                    moveStep = pickRandomElement(getValidAdjacents(moveStep));
 
                 var movePath = neighbourPaths.First(n => n.neigh == moveStep).path;
 
-                var retS = new Godot.Collections.Array { movePath, moveStep, false };
+                var retS = new Array { movePath, moveStep, false };
 
                 GD.Print(retS);
 
@@ -146,7 +163,10 @@ public partial class SmartAgentInterface : Node
 
                 var stepPos = towerAStarResult.Length == 1 ? towerAStarResult[0] : towerAStarResult[1];
 
-                var path = neighbourPaths.First(n => n.neigh == stepPos).path;
+                if (isTroopAt(stepPos))
+                    stepPos = pickRandomElement(getValidAdjacents(stepPos));
+
+                var path = neighbourPaths.First(n => n.neigh == stepPos).path;                
 
                 return [path, stepPos, false];
             case IntentionAction.Attack:
@@ -159,25 +179,12 @@ public partial class SmartAgentInterface : Node
                 var stayCloseAStarResult = AStar.Find(myPos, allyPos, p => (p - allyPos).Length() <= 4, getNeighboursFunc).ToArray();
                 var stayClosePos = stayCloseAStarResult.Length == 1 ? stayCloseAStarResult[0] : stayCloseAStarResult[1];
 
-                if (stayClosePos == allyPos)
-                {
-                    var approach_from = getAdjacentsFunc(stayClosePos)
-                        .Where(p => neighbourPaths.Any(n => n.neigh == p)).ToArray();
+                if (isTroopAt(stayClosePos))
+                    stayClosePos = pickRandomElement(getValidAdjacents(stayClosePos));
 
-                    var r = new Random();
+                var stayClosePath = neighbourPaths.First(n => n.neigh == stayClosePos).path;
 
-                    var approach = approach_from[r.Next() % approach_from.Length];
-
-                    var entry_path = neighbourPaths.First(n => n.neigh == approach).path;
-
-                    return [entry_path, approach, true];
-                }
-                else
-                {
-                    var stayClosePath = neighbourPaths.First(n => n.neigh == stayClosePos).path;
-
-                    return [stayClosePath, stayClosePos, false];
-                }
+                return [stayClosePath, stayClosePos, false];
             case IntentionAction.Retreat:
                 GD.PrintS("Starting A* from Retreat, from =", ((Troop)action.Item2!).ToString());
                 var closestAllies = troops
@@ -193,29 +200,18 @@ public partial class SmartAgentInterface : Node
                 var retreatAStarResult = AStar.Find(myPos, closestAlly, p => p == closestAlly, getNeighboursFunc).ToArray();
                 var retreatPos = retreatAStarResult.Length == 1 ? retreatAStarResult[0] : retreatAStarResult[1];
 
-                if (retreatPos == closestAlly)
-                {
-                    var retreat_from = getAdjacentsFunc(closestAlly)
-                        .Where(p => neighbourPaths.Any(n => n.neigh == p)).ToArray();
+                if (isTroopAt(retreatPos))
+                    retreatPos = pickRandomElement(getValidAdjacents(retreatPos));
 
-                    var r = new Random();
+                var retreatPath = neighbourPaths.First(n => n.neigh == retreatPos).path;
 
-                    var retreat = retreat_from[r.Next() % retreat_from.Length];
-
-                    var entry_path = neighbourPaths.First(n => n.neigh == retreat).path;
-
-                    return [entry_path, retreat, false];
-                }
-                else
-                {
-                    var retreatPath = neighbourPaths.First(n => n.neigh == retreatPos).path;
-
-                    return [retreatPath, retreatPos, false];
-                }
+                return [retreatPath, retreatPos, false];
             default:
                 throw new IndexOutOfRangeException();
         }
     }
+
+
 
     public async Task ReceiveOrder(string prompt, Dictionary thisUnit, Array<Dictionary> otherUnits, Array<Dictionary> castles)
     {

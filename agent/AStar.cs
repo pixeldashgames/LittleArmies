@@ -50,9 +50,9 @@ public static class AStar
         return g + h;
     }
 
-    public static IEnumerable<Vector2I> Find(Vector2I start, Vector2I end, Func<Vector2I, bool> finishCondition, Func<Vector2I, IEnumerable<Vector2I>> getNeightbors, float w = 1f)
+    public static IEnumerable<Vector2I> Find(Vector2I start, Vector2I end, Func<Vector2I, bool> finishCondition, Func<Vector2I, IEnumerable<Vector2I>> getNeighbours, float w = 1f)
     {
-        if (start == end)
+        if (finishCondition(start))
             return [start];
 
         var visited = new HashSet<VisitedNode>
@@ -67,7 +67,7 @@ public static class AStar
         {
             var current = queue.Dequeue();
 
-            foreach (var neighbour in getNeightbors(current.Node))
+            foreach (var neighbour in getNeighbours(current.Node))
             {               
                 if (finishCondition(neighbour))
                     return current.Path.Append(neighbour);
