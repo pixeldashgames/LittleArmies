@@ -38,7 +38,6 @@ public partial class SmartAgentInterface : Node
         {
             orderedAction = null;
             action = Agent.Agent.GetAction(myTroop, troops, towers);
-            GD.Print(action.ToString());
         }
 
         var myPos = new Vector2I(myTroop.Position.Item1, myTroop.Position.Item2);

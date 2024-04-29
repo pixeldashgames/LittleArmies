@@ -23,7 +23,7 @@ func get_terrain_at_func(p: Vector2i):
 func get_move():
     var params = get_csharp_params()
 
-    var move = csharp_agent.GetMove(params[0], params[1], params[2], \
+    var move = csharp_agent.GetMove(params[0], params[1], params[2], controller.game_map.map_size * 0.5, \
         get_moves_func, get_adjacents_func, get_terrain_at_func)
     
     if move[2] as bool:
