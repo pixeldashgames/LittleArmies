@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3 uid="uid://cwq05q1j7y6oc"]
+
+[ext_resource type="Script" path="res://scripts/unit.gd" id="1_4tfyd"]
+[ext_resource type="Script" path="res://scripts/agents/smart_agent.gd" id="2_x2vvg"]
+[ext_resource type="Script" path="res://scripts/agents/SmartAgentInterface.cs" id="3_12ma4"]
+[ext_resource type="PackedScene" uid="uid://cihfbdwql1jss" path="res://scenes/units/models/mage.tscn" id="4_5nkri"]
+
+[node name="KalmDefender" type="Node3D"]
+script = ExtResource("1_4tfyd")
+
+[node name="Agent" type="Node3D" parent="."]
+script = ExtResource("2_x2vvg")
+
+[node name="AgentInterface" type="Node" parent="Agent"]
+script = ExtResource("3_12ma4")
+desire = 1
+
+[node name="Models" type="Node3D" parent="."]
+
+[node name="Mage" parent="Models" instance=ExtResource("4_5nkri")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0)

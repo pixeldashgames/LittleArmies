@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3 uid="uid://kyj353asqmpd"]
+
+[ext_resource type="Script" path="res://scripts/unit.gd" id="1_d3ajw"]
+[ext_resource type="Script" path="res://scripts/agents/smart_agent.gd" id="2_us2vr"]
+[ext_resource type="Script" path="res://scripts/agents/SmartAgentInterface.cs" id="3_eyvmy"]
+[ext_resource type="PackedScene" uid="uid://cosjdp03k6xkr" path="res://scenes/units/models/rogue_hooded.tscn" id="4_vlflf"]
+
+[node name="KalmAttacker" type="Node3D"]
+script = ExtResource("1_d3ajw")
+
+[node name="Agent" type="Node3D" parent="."]
+script = ExtResource("2_us2vr")
+
+[node name="AgentInterface" type="Node" parent="Agent"]
+script = ExtResource("3_eyvmy")
+desire = 1
+
+[node name="Models" type="Node3D" parent="."]
+
+[node name="Rogue_Hooded" parent="Models" instance=ExtResource("4_vlflf")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0)

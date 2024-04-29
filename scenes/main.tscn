@@ -6,6 +6,5 @@
 [node name="Main" type="Node"]
 
 [node name="GameController" parent="." instance=ExtResource("1_i1fyr")]
-teams_unit_counts = Array[int]([5, 5])
 
 [node name="UserInterface" parent="." instance=ExtResource("2_xc6t0")]

@@ -17,7 +17,7 @@ public class PromptException : System.Exception
     public PromptException(string message, System.Exception inner) : base(message, inner) { }
     protected PromptException(
         System.Runtime.Serialization.SerializationInfo info,
-        System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        System.Runtime.Serialization.StreamingContext context) { }
 }
 
 readonly struct Troop(
@@ -62,16 +62,6 @@ static class Agent
 {
     private const float Range = 2f;
     private const float AttackProbability = 0.8f;
-
-
-
-    public static Vector2I ConvertIntentionToVector2I(IntentionAction intention, Vector2I start, Vector2I tarjet, AStar aStar, Func<Vector2I, IEnumerable<Vector2I>> getNeightbors)
-    {
-        if (intention == IntentionAction.Wait)
-            return start;
-        AStar star = new(start, tarjet, getNeightbors);
-        return aStar.FindPath()[0].GetPosition();
-    }
 
 
     // A function to calculate the euclidean distance between two troops
@@ -273,16 +263,16 @@ static class Agent
     /// <param name="towers"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public static bool CheckOrder(IntentionAction intentionAction, string name, Troop actualTroop, IEnumerable<Troop> troops,
+    public static bool CheckOrder(IntentionAction intentionAction, Troop actualTroop, IEnumerable<Troop> troops,
         IEnumerable<Tower> towers)
     {
         var beliefs = GetBeliefs(actualTroop, troops, towers);
         return intentionAction switch
         {
-            IntentionAction.Attack => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight && (b.Item2 as Troop?).Value.Name == name),
-            IntentionAction.ConquerTower => beliefs.Any(b => b.Item1 == BeliefState.EnemyTowerOnSight && (b.Item2 as Tower?).Value.Name == name),
-            IntentionAction.Retreat => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight && (b.Item2 as Troop?).Value.Name == name),
-            IntentionAction.StayClose => beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight && (b.Item2 as Troop?).Value.Name == name),
+            IntentionAction.Attack => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight),
+            IntentionAction.ConquerTower => beliefs.Any(b => b.Item1 == BeliefState.EnemyTowerOnSight),
+            IntentionAction.Retreat => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight),
+            IntentionAction.StayClose => beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight),
             _ => throw new ArgumentOutOfRangeException()
         };
     }

@@ -1,0 +1,20 @@
+[gd_scene load_steps=5 format=3 uid="uid://dbfiadt6lyihi"]
+
+[ext_resource type="Script" path="res://scripts/unit.gd" id="1_p5x6p"]
+[ext_resource type="Script" path="res://scripts/agents/smart_agent.gd" id="2_iy662"]
+[ext_resource type="Script" path="res://scripts/agents/SmartAgentInterface.cs" id="3_xntrx"]
+[ext_resource type="PackedScene" uid="uid://b3btouole5wuv" path="res://scenes/units/models/barbarian.tscn" id="4_na2m3"]
+
+[node name="RushAttacker" type="Node3D"]
+script = ExtResource("1_p5x6p")
+
+[node name="Agent" type="Node3D" parent="."]
+script = ExtResource("2_iy662")
+
+[node name="AgentInterface" type="Node" parent="Agent"]
+script = ExtResource("3_xntrx")
+
+[node name="Models" type="Node3D" parent="."]
+
+[node name="Barbarian" parent="Models" instance=ExtResource("4_na2m3")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0)

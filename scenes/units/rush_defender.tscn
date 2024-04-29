@@ -1,0 +1,19 @@
+[gd_scene load_steps=5 format=3 uid="uid://cfyftids0wiyy"]
+
+[ext_resource type="Script" path="res://scripts/unit.gd" id="1_3innq"]
+[ext_resource type="Script" path="res://scripts/agents/smart_agent.gd" id="2_13bbs"]
+[ext_resource type="Script" path="res://scripts/agents/SmartAgentInterface.cs" id="3_h7d3o"]
+[ext_resource type="PackedScene" uid="uid://dny5o0c5d23p5" path="res://scenes/units/models/knight.tscn" id="4_tk3wq"]
+
+[node name="RushDefender" type="Node3D"]
+script = ExtResource("1_3innq")
+
+[node name="Agent" type="Node3D" parent="."]
+script = ExtResource("2_13bbs")
+
+[node name="AgentInterface" type="Node" parent="Agent"]
+script = ExtResource("3_h7d3o")
+
+[node name="Models" type="Node3D" parent="."]
+
+[node name="Knight" parent="Models" instance=ExtResource("4_tk3wq")]

@@ -14,7 +14,16 @@ class ReceiveOrderResult:
 func get_move():
     var params = get_csharp_params()
 
-    return csharp_agent.GetMove(params[0], params[1], params[2])
+    var move = csharp_agent.GetMove(params[0], params[1], params[2], \
+        func(p): return controller.get_moves(unit, p), \
+        func(p): return controller.game_map.get_directions(p)\
+            .map(func(d): return p + d),
+        func(p): return int(controller.game_map.get_terrain_at(p)))
+    
+    if move[2] as bool:
+        return AgentMove.new(move[0][-1] as Vector2i, move[0] as Array, move[1] as Vector2i)
+    else:
+        return AgentMove.new(move[0][-1] as Vector2i, move[0] as Array)
     
 func get_csharp_params() -> Array:
     var this_unit = unit.to_dict(controller)
@@ -32,9 +41,9 @@ func get_csharp_params() -> Array:
         .map(func (u):
             var dict = u.to_dict(controller)
             if u.team != unit.team:
-                dict["current_position"] = controller.teams_knowledge[unit.team].enemy_positions[u].current_position
+                dict["current_position"] = controller.teams_knowledge[unit.team].enemy_positions[u].position
             return dict)
-    var castles = controller.castles.map(func(c): c.to_dict())
+    var castles = controller.castles.map(func(c): return c.to_dict())
 
     return [this_unit, other_units, castles]
 

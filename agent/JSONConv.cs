@@ -1,4 +1,6 @@
-﻿namespace Agent;
+﻿using System.Collections.Generic;
+
+namespace Agent;
 
 public class SafetyRatings
 {

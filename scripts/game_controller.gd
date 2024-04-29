@@ -123,8 +123,9 @@ const castle_vigilance_range: float = 5
 @export var castle_supplies_starting_values: Array[int]
 @export var unit_names: Array[String]
 
-@export var unit_scene: PackedScene
-@export var player_scene: PackedScene
+@export var defender_scenes: Array[PackedScene]
+@export var attacker_scenes: Array[PackedScene]
+
 @export var highlight_scene: PackedScene
 @export var unit_properties_scene: PackedScene
 @export var castle_properties_scene: PackedScene
@@ -196,7 +197,13 @@ func _run_full_render():
 	mountains_renderer.render(game_map)
 
 func _render_all_shadows(team: int):
-	var visibility_function = teams_knowledge[team].get_visibility_at
+	var visibility_function: Callable
+	if team == -1:
+		visibility_function = func(pos: Vector2i): \
+			return max(teams_knowledge[0].get_visibility_at(pos),\
+				teams_knowledge[1].get_visibility_at(pos))
+	else:
+		visibility_function = teams_knowledge[team].get_visibility_at
 	
 	# var image = Image.create(len(teams_knowledge[team].cells_visibility[0]), len(teams_knowledge[team].cells_visibility), false, Image.FORMAT_RGBA8)
 
@@ -213,6 +220,12 @@ func _render_all_shadows(team: int):
 	water_renderer.change_visibility(visibility_function)
 	forests_renderer.change_visibility(visibility_function)
 	mountains_renderer.change_visibility(visibility_function)
+
+func player_team() -> int:
+	var player = units_array.filter(func(u): return u.agent is UserAgent)
+	if len(player) == 0:
+		return -1
+	return player[0].team
 
 func _game_loop():
 	while _is_game_over() == GameOverResult.NOT_OVER:
@@ -252,9 +265,9 @@ func _game_loop():
 					_update_knowledge(unit)
 
 			time_between_turns.start()
-			_update_units(0)
+			_update_units(player_team())
 			_update_castles()
-			_render_all_shadows(0)
+			_render_all_shadows(player_team())
 
 			if _is_game_over() != GameOverResult.NOT_OVER:
 				break
@@ -469,12 +482,14 @@ func _generate_units_row(team: int, count: int, row: int):
 	
 	for i in range(count):
 		var x = start_x + i * unit_separation + i
-		_generate_unit_at(Vector2i(x, y), team, row == 0 and i == (count + 1) / 2 and team == 0)
+		_generate_unit_at(Vector2i(x, y), team)
 
-func _generate_unit_at(pos: Vector2i, team: int, is_player: bool):
-	var unit = unit_scene.instantiate() as Unit \
-				if not is_player \
-				else player_scene.instantiate() as Unit
+func _generate_unit_at(pos: Vector2i, team: int):
+	var array = defender_scenes if team == 0 else attacker_scenes
+	var unit_scene = array.pick_random()
+	array.erase(unit_scene)
+
+	var unit = unit_scene.instantiate() as Unit
 
 	units_parent.add_child(unit)
 	if team == 0:
@@ -504,7 +519,7 @@ func _update_castles():
 		castle_properties.set_properties(castle)
 		castle_properties_objects.append(castle_properties)
 
-func _update_units(player_team: int):
+func _update_units(p_team: int):
 	for highlight in units_hightlights:
 		highlight.queue_free()
 	units_hightlights.clear()
@@ -523,8 +538,8 @@ func _update_units(player_team: int):
 		destroy_unit(u)
 
 	for unit in units_array:
-		if player_team != -1 and unit.team != player_team:
-			unit.visible = teams_knowledge[player_team].enemy_positions[unit].last_seen == 0
+		if p_team != -1 and unit.team != p_team:
+			unit.visible = teams_knowledge[p_team].enemy_positions[unit].last_seen == 0
 			if not unit.visible:
 				continue
 

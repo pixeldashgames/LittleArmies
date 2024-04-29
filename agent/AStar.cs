@@ -17,19 +17,13 @@ class Block((int, int) position, int turn = 1)
     }
 }
 
-class AStar
+class AStar(Vector2I start, Vector2I end, Func<Vector2I, bool> finishCondition, Func<Vector2I, IEnumerable<Vector2I>> getNeightbors, float w = 1f)
 {
-    private readonly Func<Vector2I, IEnumerable<Vector2I>> getNeightbors;
-    private readonly float w;
-    private readonly Vector2I start;
-    private readonly Vector2I end;
-    public AStar(Vector2I start, Vector2I end, Func<Vector2I, IEnumerable<Vector2I>> getNeightbors, float w = 1f)
-    {
-        this.getNeightbors = getNeightbors;
-        this.w = w;
-        this.start = start;
-        this.end = end;
-    }
+    private readonly Func<Vector2I, IEnumerable<Vector2I>> getNeightbors = getNeightbors;
+    private readonly float w = w;
+    private readonly Vector2I start = start;
+    private readonly Vector2I end = end;
+    private readonly Func<Vector2I, bool> finishCondition = finishCondition;
 
     private Block CreateBlock(Vector2I position, int turn = 1)
     {
@@ -81,6 +75,11 @@ class AStar
                 if (_closedList.Contains(neighbour))
                 {
                     continue;
+                }
+
+                if (finishCondition(neighbour.GetPosition()))
+                {
+                    return ReconstructPath(neighbour);
                 }
 
                 UpdateDistance(neighbour, currentBlock, endBlock);
