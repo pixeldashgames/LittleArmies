@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://cutn6ugisyp1m"]
+
+[ext_resource type="PackedScene" uid="uid://bwro3su7uu5nc" path="res://scenes/game_controller.tscn" id="1_i1fyr"]
+[ext_resource type="PackedScene" uid="uid://btm0ideedjvm7" path="res://scenes/user_interface.tscn" id="2_xc6t0"]
+
+[node name="Main" type="Node"]
+
+[node name="GameController" parent="." instance=ExtResource("1_i1fyr")]
+teams_unit_counts = Array[int]([5, 5])
+
+[node name="UserInterface" parent="." instance=ExtResource("2_xc6t0")]

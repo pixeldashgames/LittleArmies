@@ -130,7 +130,7 @@ const castle_vigilance_range: float = 5
 @onready var time_between_turns: Timer = $TimeBetweenTurns
 
 @onready var camera:Camera3D = $Camera3D
-@onready var knowledge_updater = $KnowledgeUpdater
+@onready var hex_math = $HexMath
 @onready var terrain_renderer = $TerrainRenderer
 @onready var underground_renderer = $UndergroundRenderer
 @onready var water_renderer = $WaterRenderer
@@ -152,6 +152,8 @@ func _ready():
 	game_map.generate()
 	_run_full_render()
 	_generate_units()
+
+	print(hex_math.GetCellsBetween(Vector2i(3, 0), Vector2i(3, 5)))
 
 	for team in range(len(teams_unit_counts)):
 		teams_knowledge.append(\
@@ -232,6 +234,7 @@ func _game_loop():
 
 						if result == CastleClaimResult.CONQUERED:
 							unit.take_castle()
+							Logger.log_take_castle(unit, this_castle)
 						elif result == CastleClaimResult.NEUTRALIZED:
 							unit.neutralized_castle()	
 						
@@ -281,7 +284,7 @@ func get_cells_in_range(from: Vector2i, max_range: float):
 
 	return cells_in_range	
 
-func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, this_height: float, team: int):
+func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, cells_in_between: Array, this_height: float, team: int):
 	if from == c:
 		teams_knowledge[team].set_cell_visibility(source, from, 1)
 		return
@@ -296,7 +299,7 @@ func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, this_height
 	else:
 		visibility = plains_initial_visibility_multiplier
 
-	var cells_in_between = HexagonMath.get_cells_between(from, c)
+	# var cells_in_between = HexagonMath.get_cells_between(from, c)
 
 	var height_change_point = this_height
 	var increased_height = false
@@ -341,8 +344,10 @@ func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, this_height
 
 func _update_visibility_for_source(source, from: Vector2i, height: float, team: int, vigilance_range: float):
 	var cells_in_range = get_cells_in_range(from, vigilance_range)
-	for c in cells_in_range:
-		update_visibility_for_cell(source, from, c, height, team)
+	var in_between_for_each_cell = hex_math.GetAllCellsBetween(from, cells_in_range)
+
+	for i in range(len(cells_in_range)):
+		update_visibility_for_cell(source, from, cells_in_range[i], in_between_for_each_cell[i], height, team)
 
 func _update_castles_visibility():
 	for castle in castles:
@@ -412,6 +417,8 @@ func _perform_battle(unit_a: Unit, unit_b: Unit, advantage_unit: int):
 	teams_knowledge[unit_b.team].enemy_positions[unit_a].last_seen = 0
 	teams_knowledge[unit_a.team].enemy_positions[unit_b].position = unit_b.current_position
 	teams_knowledge[unit_b.team].enemy_positions[unit_a].position = unit_a.current_position
+
+	Logger.log_combat(unit_a, unit_b, b_deaths, b_injured, a_deaths, a_injured)
 
 func destroy_unit(unit: Unit):
 	units_array.erase(unit)

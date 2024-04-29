@@ -11,7 +11,7 @@ func get_move() -> AgentMove:
 	if target_unit[0] and target_unit[1] != null and target_unit[1] != unit:
 		var adjacent = _get_random_adjacent_move(moves, random_move)
 		var entry_path = possible_moves.filter(func(m): return m[0] == adjacent)[0][1]
-		if target_unit.team == unit.team:
+		if target_unit[1].team == unit.team:
 			return AgentMove.new(adjacent, entry_path, null)
 		else:
 			return AgentMove.new(adjacent, entry_path, random_move)

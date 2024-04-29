@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://btm0ideedjvm7"]
+
+[ext_resource type="Script" path="res://scripts/logger.gd" id="1_1rf64"]
+
+[node name="UserInterface" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Logger" type="VBoxContainer" parent="."]
+clip_contents = true
+layout_direction = 1
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 0
+script = ExtResource("1_1rf64")
