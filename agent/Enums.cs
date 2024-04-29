@@ -2,20 +2,15 @@
 
 internal enum BeliefState
 {
-    Attack,
-    Retreat,
-    Stay,
-    Move,
     EnemyOnSight,
     EnemyInRange,
     AlliesOnSight,
     AlliesInRange,
-    PonderRetreat,
-    AskForHelp,
-    ReinforcementOnWay,
-    TowerOnSight,
-    TowerInRange,
-    AttackTower,
+    AllyTowerOnSight,
+    AllyTowerInRange,
+    EnemyTowerOnSight,
+    EnemyTowerInRange,
+
 }
 internal enum DesireState
 {
@@ -23,25 +18,21 @@ internal enum DesireState
     StayCalm,
 }
 
-internal enum IntentionAvailable
-{
-    Available,
-    NotAvailable,
-}
-
 internal enum IntentionAction
 {
     Attack,
-    AttackTower,
     Retreat,
-    Help,
-    Move,
     StayClose,
-    Stay
+    Wait,
+    ConquerTower,
+    Move
 }
 
-internal enum IntentionHelp
+internal enum TerrainType
 {
-    NeedHelp,
-    NoHelpNeeded,
+    Plain = 10,
+    Water = 15,
+    Mountain = 30,
+    Tower = 50,
+    Forest = 20,
 }
