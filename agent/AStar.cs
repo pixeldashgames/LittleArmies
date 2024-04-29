@@ -1,45 +1,47 @@
-class Block((int,int) position, bool isStart, bool isEnd, int turn = 1)
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Godot;
+#nullable enable
+class Block((int, int) position, int turn = 1)
 {
-    
-    public (int,int) Position = position;
+
+    public (int, int) Position = position;
     public Block? Parent;
-    public bool IsStart = isStart;
-    public bool IsEnd = isEnd;
     public int GCost = turn;
     public float ShortestPath = float.MaxValue;
+
+    public Vector2I GetPosition()
+    {
+        return new Vector2I(Position.Item1, Position.Item2);
+    }
 }
 
-class AStar(Block[,] map, Func<Block,IEnumerable<Block>>getNeightbors,  float w = 1f)
+class AStar
 {
+    private readonly Func<Vector2I, IEnumerable<Vector2I>> getNeightbors;
+    private readonly float w;
+    private readonly Vector2I start;
+    private readonly Vector2I end;
+    public AStar(Vector2I start, Vector2I end, Func<Vector2I, IEnumerable<Vector2I>> getNeightbors, float w = 1f)
+    {
+        this.getNeightbors = getNeightbors;
+        this.w = w;
+        this.start = start;
+        this.end = end;
+    }
+
+    private Block CreateBlock(Vector2I position, int turn = 1)
+    {
+        return new Block((position.X, position.Y), turn);
+    }
     private float W => w;
     private List<Block> _openList = [];
     private List<Block> _closedList = [];
-    private (Block,Block) FindStartEnd()
-    {
-        Block? startBlock = null;
-        Block? endBlock = null;
-        foreach (var block in map)
-        {
-            if (block.IsStart)
-            {
-                startBlock = block;
-            }
-            if (block.IsEnd)
-            {
-                endBlock = block;
-            }
-        }
-        
-        if (startBlock == null || endBlock == null)
-        {
-            throw new Exception("Start or end block not found");
-        }
-        return (startBlock,endBlock);
-    }
     private void UpdateDistance(Block neighbour, Block currentBlock, Block endBlock)
     {
         var newGCost = currentBlock.GCost + 1;
-        var newHCost = W*GetDistance(neighbour,endBlock);
+        var newHCost = W * GetDistance(neighbour, endBlock);
         var newCost = newGCost + newHCost;
         if (!(newCost < neighbour.ShortestPath) && _openList.Contains(neighbour)) return;
         neighbour.GCost = newGCost;
@@ -53,26 +55,11 @@ class AStar(Block[,] map, Func<Block,IEnumerable<Block>>getNeightbors,  float w 
                           + MathF.Pow(neighbour.Position.Item2 - endBlock.Position.Item2, 2));
     }
 
-    // Directionals array in order to get the neighbours in the 8 directions
-    private int[] _d1 = { 0, 1, 1, 1, 0, -1, -1, -1 };
-    private int[] _d2 = { 1, 1, 0, -1, -1, -1, 0, 1 };
 
-    private IEnumerable<Block> GetNeighbours(Block currentBlock)
-    {
-        for (var i = 0; i < _d1.Length; i++)
-        {
-            var x = currentBlock.Position.Item1 + _d1[i];
-            var y = currentBlock.Position.Item2 + _d2[i];
-            if (x >= 0 && x < map.GetLength(0) && y >= 0 && y < map.GetLength(1))
-            {
-                yield return map[x, y];
-            }
-        }
-    }
     public List<Block> FindPath()
     {
-        var (startBlock, endBlock) = FindStartEnd();
-        
+        var (startBlock, endBlock) = (CreateBlock(start), CreateBlock(end));
+
         startBlock.GCost = 0;
         _openList.Add(startBlock);
 
@@ -88,14 +75,14 @@ class AStar(Block[,] map, Func<Block,IEnumerable<Block>>getNeightbors,  float w 
                 return ReconstructPath(currentBlock);
             }
 
-            var neighbours = GetNeighbours(currentBlock);
+            var neighbours = getNeightbors(currentBlock.GetPosition()).Select(CreateBlock);
             foreach (var neighbour in neighbours)
             {
                 if (_closedList.Contains(neighbour))
                 {
                     continue;
                 }
-                
+
                 UpdateDistance(neighbour, currentBlock, endBlock);
 
                 if (_openList.Contains(neighbour)) continue;
