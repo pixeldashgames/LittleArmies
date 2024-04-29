@@ -37,7 +37,7 @@ readonly struct Tower((int, int) position, string name, bool defenders)
 
 static class Agent
 {
-    private const int Range = 5;
+    private const float Range = 2f;
     private const float AttackProbability = 0.8f;
 
 
@@ -60,7 +60,7 @@ static class Agent
 
     private static bool IsAlly(Troop troop1, Troop troop2)
     {
-        return troop1.Defenders && troop2.Defenders;
+        return troop1.Defenders == troop2.Defenders;
     }
 
     private static bool IsAlly(Troop troop, Tower tower2)
@@ -72,8 +72,8 @@ static class Agent
         IEnumerable<Tower> towers)
     {
         var beliefs = GetBeliefs(actualTroop, troops, towers).ToArray();
-        var intentions = GetIntention(actualTroop, beliefs);
-        throw new NotImplementedException();
+        var intention = GetIntention(actualTroop, beliefs);
+        return intention;
     }
 
     // Generating believes given the current state of the world
@@ -123,24 +123,24 @@ static class Agent
     private static (IntentionAction, object?) GetIntention(Troop actualTroop,
         (BeliefState, object?)[] beliefs)
     {
-        List<(IntentionAction, object?, float)> actions = [];
+        List<(IntentionAction, object?)> actions = [];
 
         // Select each enemy tower on sight
         var towers = beliefs.Where(b => b.Item1 is BeliefState.EnemyTowerOnSight)
-            .Select(b => b.Item2 as Tower?);
+            .Select(b => b.Item2 as Tower?).ToList();
 
         // Compare the towers position with the troops position and select the empty towers
         var troops = beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight or BeliefState.AlliesOnSight)
             .Select(b => b.Item2 as Troop?).ToList();
-
+        
         var towerCanGo = towers
             .Where(tower => troops.All(t => t?.Position != tower?.Position))
-            .DefaultIfEmpty(null)
+            .DefaultIfEmpty()
             .MinBy(t => Distance(actualTroop,
                 t));
 
         if (towerCanGo != null)
-            return (IntentionAction.ConquerTower, towerCanGo);
+            return actualTroop.Desire==DesireState.GoAhead?(IntentionAction.ConquerTower, towerCanGo): (IntentionAction.StayClose, beliefs.Where(b=>b.Item1==BeliefState.AlliesOnSight).MinBy(b=>Distance(actualTroop, b.Item2 as Troop?)).Item2);
 
         // Select the action to take for each enemy on sight
         foreach (var enemy in beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight)
@@ -148,27 +148,26 @@ static class Agent
         {
             if (enemy == null) continue;
 
-            var action = ((actualTroop.Troops + (float)(actualTroop.Troops) * (int)actualTroop.Terrain / 100f) /
-                          (enemy.Value.Troops + enemy.Value.Troops *
-                              ((int)actualTroop.Terrain / 100f))) * (1 / Distance(actualTroop, enemy));
-
+            var action = (actualTroop.Troops + (float)(actualTroop.Troops) * (int)actualTroop.Terrain / 100f) /
+                         (enemy.Value.Troops + enemy.Value.Troops *
+                             ((int)actualTroop.Terrain / 100f));
             if (action > AttackProbability)
-                actions.Add((IntentionAction.Attack, enemy, action));
+                actions.Add((IntentionAction.Attack, enemy));
             else
             {
                 if (beliefs.Contains((BeliefState.EnemyInRange, enemy)))
-                    actions.Add((IntentionAction.Retreat, enemy, action));
+                    actions.Add((IntentionAction.Retreat, enemy));
             }
         }
 
         if (actualTroop.Desire == DesireState.GoAhead)
             return (actions.Count == 0)
                 ? (IntentionAction.Move, null)
-                : actions.OrderByDescending(a => a.Item3).Select(a => (a.Item1, a.Item2)).First();
+                : actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
 
 
-        if (beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight))
-            return actions.OrderByDescending(a => a.Item3).Select(a => (a.Item1, a.Item2)).First();
+        if (beliefs.Any(b => b.Item1 == BeliefState.EnemyInRange))
+            return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
         if (beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight))
             return (IntentionAction.Wait, beliefs.First(b => b.Item1 == BeliefState.AllyTowerOnSight).Item2);
         return (IntentionAction.StayClose,
@@ -194,7 +193,7 @@ static class Agent
         switch (split[0].ToLower())
         {
             case "attack":
-                if(target is Troop troop && troop.Defenders == actualTroop.Defenders)
+                if (target is Troop troop && troop.Defenders == actualTroop.Defenders)
                     throw new ArgumentException("Cannot attack an ally");
                 if (target is Tower tower && tower.OccupiedByDefenders == actualTroop.Defenders)
                     throw new ArgumentException("Cannot attack an ally tower");
