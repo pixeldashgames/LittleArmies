@@ -48,6 +48,13 @@ static func get_cells_between(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	if from == to:
 		return cells
 
+	# var origin := Vector2(from.x * 2 + posmod(from.y, 2), from.y * sqrt(3))
+	# var current := origin
+	# var target := Vector2(to.x * 2 + posmod(to.y, 2), to.y * sqrt(3))
+
+	# var adjacents = range(6).map(func(n): _hex_side_to_adjacent(from, n))
+	# var dots = adjacents.map(func(n): )
+
 	var from_pos = Vector2(from.x * 2 + posmod(from.y, 2), from.y * sqrt(3))
 	var to_pos = Vector2(to.x * 2 + posmod(to.y, 2), to.y * sqrt(3))
 
