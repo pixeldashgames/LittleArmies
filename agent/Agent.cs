@@ -17,7 +17,8 @@ public class PromptException : System.Exception
     public PromptException(string message, System.Exception inner) : base(message, inner) { }
     protected PromptException(
         System.Runtime.Serialization.SerializationInfo info,
-        System.Runtime.Serialization.StreamingContext context) { }
+        System.Runtime.Serialization.StreamingContext context)
+    { }
 }
 
 readonly struct Troop(
@@ -156,12 +157,14 @@ static class Agent
         var troops = beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight or BeliefState.AlliesOnSight)
             .Select(b => b.Item2 as Troop?).ToList();
 
+        // Select the closest one
         var towerCanGo = towers
             .Where(tower => troops.All(t => t?.Position != tower?.Position))
             .DefaultIfEmpty()
             .MinBy(t => Distance(actualTroop,
                 t));
 
+        // if a tower is available, Conquerer if the desire is to go ahead, otherwise stay close
         if (towerCanGo != null)
             return actualTroop.Desire == DesireState.GoAhead ? (IntentionAction.ConquerTower, towerCanGo) : (IntentionAction.StayClose, beliefs.Where(b => b.Item1 == BeliefState.AlliesOnSight).MinBy(b => Distance(actualTroop, b.Item2 as Troop?)).Item2);
 
@@ -183,19 +186,41 @@ static class Agent
             }
         }
 
+        // if the troop desire is to go ahead, conquer the tower if there is no enemy on sight else attack the closest enemy
         if (actualTroop.Desire == DesireState.GoAhead)
-            return (actions.Count == 0)
-                ? (IntentionAction.ConquerTower, beliefs.Where(b => b.Item1 == BeliefState.EnemyTowerOnSight).MinBy(b => Distance(actualTroop, b.Item2 as Tower?)).Item2)
-                : actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
+            if (actions.Count == 0)
+                if (beliefs.Any(b => b.Item1 == BeliefState.EnemyTowerOnSight))
+                    return (IntentionAction.ConquerTower, beliefs.Where(b => b.Item1 == BeliefState.EnemyTowerOnSight).MinBy(b => Distance(actualTroop, b.Item2 as Tower?)).Item2);
+                else
+                    return (IntentionAction.Move, null);
+            else
+                return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
 
+        // When the desire is to stay close
 
+        // if there is an enemy in range, attack the closest one
         if (beliefs.Any(b => b.Item1 == BeliefState.EnemyInRange))
             return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
-        if (beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight))
+
+        // if there is an ally tower on sight, stay close to it
+        if (beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight) && actualTroop.Defenders)
             return (IntentionAction.Wait, beliefs.First(b => b.Item1 == BeliefState.AllyTowerOnSight).Item2);
-        return (IntentionAction.StayClose,
-            beliefs.Where(b => b.Item1 == BeliefState.AllyTowerOnSight)
-                .MinBy(b => Distance(actualTroop, b.Item2 as Tower?)).Item2);
+
+        // if there is an ally on sight, stay close to it
+        if (beliefs.Any(b => b.Item1 == BeliefState.AlliesOnSight) && !actualTroop.Defenders)
+            return (IntentionAction.StayClose,
+                beliefs.Where(b => b.Item1 == BeliefState.AlliesOnSight)
+                    .MinBy(b => Distance(actualTroop, b.Item2 as Troop?)).Item2);
+
+        // if actual troop desire is to stay close
+        if (actualTroop.Desire == DesireState.StayCalm)
+        {
+            // if there is an enemy on sight, attack the closest one
+            if (beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight))
+                return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
+        }
+
+        return (IntentionAction.Wait, null);
     }
 
     public static async Task<(IntentionAction, object?)> Nlp(string message, Troop actualTroop, IEnumerable<Troop> troops,
@@ -218,7 +243,7 @@ static class Agent
         }
         foreach (var name in towersName)
         {
-            orderAndName.Add("conquerTower " + name);
+            orderAndName.Add("attack " + name);
         }
 
         var order = await HttpConnection.SelectOption(message, orderAndName.ToArray());
@@ -273,6 +298,8 @@ static class Agent
             IntentionAction.ConquerTower => beliefs.Any(b => b.Item1 == BeliefState.EnemyTowerOnSight),
             IntentionAction.Retreat => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight),
             IntentionAction.StayClose => beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight),
+            IntentionAction.Wait => true,
+            IntentionAction.Move => true,
             _ => throw new ArgumentOutOfRangeException()
         };
     }
