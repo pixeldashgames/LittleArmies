@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Godot;
 
 #nullable enable
 
@@ -61,6 +62,16 @@ static class Agent
 {
     private const float Range = 2f;
     private const float AttackProbability = 0.8f;
+
+
+
+    public static Vector2I ConvertIntentionToVector2I(IntentionAction intention, Vector2I start, Vector2I tarjet, AStar aStar, Func<Vector2I, IEnumerable<Vector2I>> getNeightbors)
+    {
+        if (intention == IntentionAction.Wait)
+            return start;
+        AStar star = new(start, tarjet, getNeightbors);
+        return aStar.FindPath()[0].GetPosition();
+    }
 
 
     // A function to calculate the euclidean distance between two troops
@@ -184,7 +195,7 @@ static class Agent
 
         if (actualTroop.Desire == DesireState.GoAhead)
             return (actions.Count == 0)
-                ? (IntentionAction.Move, null)
+                ? (IntentionAction.ConquerTower, beliefs.Where(b => b.Item1 == BeliefState.EnemyTowerOnSight).MinBy(b => Distance(actualTroop, b.Item2 as Tower?)).Item2)
                 : actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
 
 
@@ -247,8 +258,6 @@ static class Agent
                 return (IntentionAction.StayClose, target!);
             case "wait":
                 return (IntentionAction.Wait, target);
-            case "move":
-                return (IntentionAction.Move, target);
             default:
                 throw new PromptException("Command not found");
         }
@@ -264,17 +273,16 @@ static class Agent
     /// <param name="towers"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public static bool CheckOrder(IntentionAction intentionAction, Troop actualTroop, IEnumerable<Troop> troops,
+    public static bool CheckOrder(IntentionAction intentionAction, string name, Troop actualTroop, IEnumerable<Troop> troops,
         IEnumerable<Tower> towers)
     {
         var beliefs = GetBeliefs(actualTroop, troops, towers);
         return intentionAction switch
         {
-            IntentionAction.Attack => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight),
-            IntentionAction.ConquerTower => beliefs.Any(b => b.Item1 == BeliefState.EnemyTowerOnSight),
-            IntentionAction.Retreat => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight),
-            IntentionAction.StayClose => beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight),
-            IntentionAction.Move => true,
+            IntentionAction.Attack => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight && (b.Item2 as Troop?).Value.Name == name),
+            IntentionAction.ConquerTower => beliefs.Any(b => b.Item1 == BeliefState.EnemyTowerOnSight && (b.Item2 as Tower?).Value.Name == name),
+            IntentionAction.Retreat => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight && (b.Item2 as Troop?).Value.Name == name),
+            IntentionAction.StayClose => beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight && (b.Item2 as Troop?).Value.Name == name),
             _ => throw new ArgumentOutOfRangeException()
         };
     }
