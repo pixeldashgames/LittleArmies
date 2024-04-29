@@ -66,7 +66,7 @@ class AStar(Vector2I start, Vector2I end, Func<Vector2I, bool> finishCondition, 
             _openList.Remove(currentBlock);
             _closedList.Add(currentBlock);
 
-            if (currentBlock == endBlock)
+            if (currentBlock.GetPosition() == endBlock.GetPosition())
             {
                 return ReconstructPath(currentBlock);
             }
@@ -74,7 +74,7 @@ class AStar(Vector2I start, Vector2I end, Func<Vector2I, bool> finishCondition, 
             var neighbours = getNeightbors(currentBlock.GetPosition()).Select(CreateBlock);
             foreach (var neighbour in neighbours)
             {
-                if (_closedList.Any(b => b.Position.Item1 == neighbour.Position.Item1 && b.Position.Item2 == neighbour.Position.Item2))
+                if (_closedList.Any(b => b.GetPosition() == neighbour.GetPosition()))
                 {
                     continue;
                 }
@@ -86,7 +86,7 @@ class AStar(Vector2I start, Vector2I end, Func<Vector2I, bool> finishCondition, 
 
                 UpdateDistance(neighbour, currentBlock, endBlock);
 
-                if (_openList.Any(b => b.Position.Item1 == neighbour.Position.Item1 && b.Position.Item2 == neighbour.Position.Item2)) continue;
+                if (_openList.Any(b => b.GetPosition() == neighbour.GetPosition())) continue;
                 _openList.Add(neighbour);
             }
             _openList.Sort((a, b) => a.ShortestPath.CompareTo(b.ShortestPath));
