@@ -28,15 +28,17 @@ readonly struct Troop(
     TerrainType terrain,
     float height,
     string name,
-    bool defenders)
+    bool defenders,
+    int supplies)
 {
-    public (int, int) Position => position;
+    public Vector2I Position => new(position.Item1, position.Item2);
     public int Troops => troops;
     public DesireState? Desire => desire;
     public TerrainType Terrain => terrain;
     public float Height => height;
     public string Name => name;
     public bool Defenders => defenders;
+    public int Supplies => supplies;
 
     public override bool Equals(object? obj)
     {
@@ -54,18 +56,26 @@ readonly struct Troop(
     {
         return $"Troop {name} with {troops} troops at position {position}";
     }
-
+    public Vector2I GetVector2I()
+    {
+        return new Vector2I(position.Item1, position.Item2);
+    }
 }
 
-readonly struct Tower((int, int) position, string name, bool defenders)
+readonly struct Tower((int, int) position, string name, bool defenders, int supplies)
 {
     public string Name => name;
-    public (int, int) Position => position;
+    public Vector2I Position => new(position.Item1, position.Item2);
     public bool OccupiedByDefenders => defenders;
+    public int Supplies => supplies;
 
     public override string ToString()
     {
         return $"Tower {name} at position {position}";
+    }
+    public Vector2I GetVector2I()
+    {
+        return new Vector2I(position.Item1, position.Item2);
     }
 }
 
@@ -74,22 +84,21 @@ static class Agent
     private const float Range = 2f;
     private const float AttackProbability = 0.8f;
 
-
     // A function to calculate the euclidean distance between two troops
     private static float Distance(Troop troop1, Troop? troop2)
     {
         if (troop2 == null)
             return 0;
-        return MathF.Sqrt(MathF.Pow(troop1.Position.Item1 - troop2.Value.Position.Item1, 2) +
-                          MathF.Pow(troop1.Position.Item2 - troop2.Value.Position.Item2, 2));
+        return MathF.Sqrt(MathF.Pow(troop1.Position.X - troop2.Value.Position.X, 2) +
+                          MathF.Pow(troop1.Position.Y - troop2.Value.Position.Y, 2));
     }
 
     private static float Distance(Troop troop, Tower? tower)
     {
         if (tower == null)
             return 0;
-        return MathF.Sqrt(MathF.Pow(troop.Position.Item1 - tower.Value.Position.Item1, 2) +
-                          MathF.Pow(troop.Position.Item2 - tower.Value.Position.Item2, 2));
+        return MathF.Sqrt(MathF.Pow(troop.Position.X - tower.Value.Position.X, 2) +
+                          MathF.Pow(troop.Position.Y - tower.Value.Position.Y, 2));
     }
 
     private static bool IsAlly(Troop troop1, Troop troop2)
@@ -103,10 +112,10 @@ static class Agent
     }
 
     public static (IntentionAction, object?) GetAction(Troop actualTroop, IEnumerable<Troop> troops,
-        IEnumerable<Tower> towers)
+        IEnumerable<Tower> towers, Func<Vector2I, IEnumerable<Vector2I>> getNeightbor)
     {
         var beliefs = GetBeliefs(actualTroop, troops, towers).ToArray();
-        var intention = GetIntention(actualTroop, beliefs);
+        var intention = GetIntention(actualTroop, beliefs, getNeightbor);
         return intention;
     }
 
@@ -155,7 +164,7 @@ static class Agent
     }
 
     private static (IntentionAction, object?) GetIntention(Troop actualTroop,
-        (BeliefState, object?)[] beliefs)
+        (BeliefState, object?)[] beliefs, Func<Vector2I, IEnumerable<Vector2I>> getNeightbor)
     {
         List<(IntentionAction, object?)> actions = [];
 
@@ -174,9 +183,9 @@ static class Agent
             .MinBy(t => Distance(actualTroop,
                 t));
 
-        // if a tower is available, Conquerer if the desire is to go ahead, otherwise stay close
+        // if a tower is available, Conquerer it
         if (towerCanGo != null)
-            return actualTroop.Desire == DesireState.GoAhead ? (IntentionAction.ConquerTower, towerCanGo) : (IntentionAction.StayClose, beliefs.Where(b => b.Item1 == BeliefState.AlliesOnSight).MinBy(b => Distance(actualTroop, b.Item2 as Troop?)).Item2);
+            return (IntentionAction.ConquerTower, towerCanGo);
 
         // Select the action to take for each enemy on sight
         foreach (var enemy in beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight)
@@ -193,6 +202,25 @@ static class Agent
             {
                 if (beliefs.Contains((BeliefState.EnemyInRange, enemy)))
                     actions.Add((IntentionAction.Retreat, enemy));
+            }
+        }
+
+        if (beliefs.Any(b => b.Item1 == BeliefState.EnemyInRange))
+        { }
+        else
+        {
+            // Go to get suppplies to the closest tower that is ally or havent enemies inside
+            var tower = towers
+                .Where(tower => troops.All(t => t?.Position != tower?.Position))
+                .DefaultIfEmpty()
+                .MinBy(t => Distance(actualTroop,
+                    t));
+            if (tower != null)
+            {
+                // Check if the amount of turns to get the supplies equal to the amount of supplies that can be spent on the way
+                var wayToTower = AStar.Find(actualTroop.Position, tower.Value.GetVector2I(), n => n == tower.Value.GetVector2I(), getNeightbor);
+                if (wayToTower.Count() == actualTroop.Supplies / actualTroop.Troops)
+                    return (IntentionAction.GetSuplies, tower);
             }
         }
 
@@ -254,6 +282,7 @@ static class Agent
         foreach (var name in towersName)
         {
             orderAndName.Add("attack " + name);
+            orderAndName.Add("getSupplies " + name);
         }
 
         var order = await HttpConnection.SelectOption(message, orderAndName.ToArray());
@@ -283,6 +312,12 @@ static class Agent
                 return (IntentionAction.StayClose, target!);
             case "wait":
                 return (IntentionAction.Wait, target);
+            case "getSupplies":
+                if (target is not Tower tower1)
+                    throw new PromptException("Target has to be a tower");
+                if (troops.Any(t => t.Position == tower1.GetVector2I()))
+                    throw new PromptException("Cannot get supplies from a tower with troops inside");
+                return (IntentionAction.GetSuplies, target!);
             default:
                 throw new PromptException("Command not found");
         }
@@ -310,6 +345,7 @@ static class Agent
             IntentionAction.StayClose => beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight),
             IntentionAction.Wait => true,
             IntentionAction.Move => true,
+            IntentionAction.GetSuplies => beliefs.Any(b => b.Item1 is BeliefState.AllyTowerOnSight or BeliefState.AllyTowerInRange),
             _ => throw new ArgumentOutOfRangeException()
         };
     }
