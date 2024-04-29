@@ -12,10 +12,10 @@ internal enum BeliefState
     EnemyTowerInRange,
 
 }
-internal enum DesireState
+public enum DesireState
 {
-    GoAhead,
-    StayCalm,
+    GoAhead = 0,
+    StayCalm = 1,
 }
 
 internal enum IntentionAction
@@ -31,7 +31,7 @@ internal enum IntentionAction
 internal enum TerrainType
 {
     Plain = 10,
-    Water = 15,
+    Water = 5,
     Mountain = 30,
     Tower = 50,
     Forest = 20,

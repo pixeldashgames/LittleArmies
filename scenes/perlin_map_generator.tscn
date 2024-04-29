@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://fodkdr6i5mkn"]
 
-[ext_resource type="Script" path="res://scripts/PerlinMapGenerator.cs" id="1_pte0g"]
+[ext_resource type="Script" path="res://scripts/utils/PerlinMapGenerator.cs" id="1_pte0g"]
 
 [node name="PerlinMapGenerator" type="Node"]
 script = ExtResource("1_pte0g")

@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://ddah6l6dir1cc"]
 
-[ext_resource type="Script" path="res://scripts/hex_highlight.gd" id="1_oecfp"]
+[ext_resource type="Script" path="res://scripts/ui/hex_highlight.gd" id="1_oecfp"]
 [ext_resource type="Texture2D" uid="uid://cfj6yhwfk4282" path="res://art/textures/cell_highlight.png" id="1_xtwt3"]
 
 [node name="HexHighlight" type="Node3D"]

@@ -1,6 +1,13 @@
-[gd_scene load_steps=2 format=3 uid="uid://btm0ideedjvm7"]
+[gd_scene load_steps=5 format=3 uid="uid://btm0ideedjvm7"]
 
-[ext_resource type="Script" path="res://scripts/logger.gd" id="1_1rf64"]
+[ext_resource type="Script" path="res://scripts/ui/logger.gd" id="1_1rf64"]
+[ext_resource type="Script" path="res://scripts/ui/order_interface.gd" id="2_rpaft"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_5t4sm"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_jh51y"]
+font_size = 10
+font_color = Color(1, 0.294118, 0.294118, 1)
 
 [node name="UserInterface" type="Control"]
 layout_mode = 3
@@ -22,3 +29,103 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_constants/separation = 0
 script = ExtResource("1_1rf64")
+
+[node name="OrderInterface" type="Node" parent="." node_paths=PackedStringArray("targets_selector", "error_label", "send_button", "prompt_input")]
+script = ExtResource("2_rpaft")
+targets_selector = NodePath("GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/TargetsDropdown")
+error_label = NodePath("GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer/ErrorLabel")
+send_button = NodePath("GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/SendButton")
+prompt_input = NodePath("GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer/PromptInput")
+
+[node name="StartOrderButton" type="Button" parent="OrderInterface"]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -64.0
+offset_top = -68.0
+offset_right = 64.0
+offset_bottom = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Give Order"
+
+[node name="GiveOrderPrompt" type="CenterContainer" parent="OrderInterface"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="OrderInterface/GiveOrderPrompt"]
+custom_minimum_size = Vector2(400, 300)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="OrderInterface/GiveOrderPrompt/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Give any order!"
+label_settings = SubResource("LabelSettings_5t4sm")
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Target"
+
+[node name="TargetsDropdown" type="OptionButton" parent="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="PromptInput" type="TextEdit" parent="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+placeholder_text = "Enter prompt here..."
+wrap_mode = 1
+
+[node name="ErrorLabel" type="Label" parent="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "That's not a valid order!"
+label_settings = SubResource("LabelSettings_jh51y")
+horizontal_alignment = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 20
+
+[node name="CancelButton" type="Button" parent="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(128, 32)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+text = "Cancel"
+
+[node name="SendButton" type="Button" parent="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(128, 32)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+text = "Send!"
+
+[connection signal="button_down" from="OrderInterface/StartOrderButton" to="OrderInterface" method="_on_start_order_button_button_down"]
+[connection signal="button_down" from="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/CancelButton" to="OrderInterface" method="_on_cancel_button_button_down"]
+[connection signal="button_down" from="OrderInterface/GiveOrderPrompt/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/SendButton" to="OrderInterface" method="_on_send_button_button_down"]

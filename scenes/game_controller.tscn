@@ -8,7 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://des0k65qdru11" path="res://scenes/unit_properties.tscn" id="5_fvalf"]
 [ext_resource type="Script" path="res://scripts/camera_controller.gd" id="6_oqh7y"]
 [ext_resource type="PackedScene" uid="uid://dlcqd0vk4pbc8" path="res://scenes/castle_properties.tscn" id="6_wqs25"]
-[ext_resource type="Script" path="res://scripts/hex_renderer.gd" id="7_vnf7q"]
+[ext_resource type="Script" path="res://scripts/renderers/hex_renderer.gd" id="7_vnf7q"]
 [ext_resource type="PackedScene" uid="uid://bjgrj5i2hexab" path="res://scenes/renderers/terrain_renderer.tscn" id="8_dljjw"]
 [ext_resource type="PackedScene" uid="uid://br8akmpxihgtc" path="res://scenes/renderers/shadowed_terrain_renderer.tscn" id="9_i2mos"]
 [ext_resource type="PackedScene" uid="uid://dymd474460hms" path="res://scenes/renderers/underground_renderer.tscn" id="9_ivv3j"]
@@ -19,7 +19,7 @@
 [ext_resource type="PackedScene" uid="uid://b3ao22el2bixv" path="res://scenes/renderers/shadowed_water_renderer.tscn" id="13_tugmb"]
 [ext_resource type="PackedScene" uid="uid://8adtmwsm68t2" path="res://scenes/renderers/shadowed_mountains_renderer.tscn" id="15_unf6s"]
 [ext_resource type="PackedScene" uid="uid://cmnpsjls51ua5" path="res://scenes/renderers/shadowed_forests_renderer.tscn" id="17_gar75"]
-[ext_resource type="Script" path="res://scripts/HexCellsBetween.cs" id="20_webjb"]
+[ext_resource type="Script" path="res://scripts/utils/HexCellsBetween.cs" id="20_webjb"]
 
 [node name="GameController" type="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0419369, -0.044529, -0.0145645)

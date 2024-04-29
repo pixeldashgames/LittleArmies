@@ -10,7 +10,7 @@ namespace Agent;
 readonly struct Troop(
     (int, int) position,
     int troops,
-    DesireState desire,
+    DesireState? desire,
     TerrainType terrain,
     float height,
     string name,
@@ -18,7 +18,7 @@ readonly struct Troop(
 {
     public (int, int) Position => position;
     public int Troops => troops;
-    public DesireState Desire => desire;
+    public DesireState? Desire => desire;
     public TerrainType Terrain => terrain;
     public float Height => height;
     public string Name => name;
@@ -30,6 +30,12 @@ readonly struct Troop(
             return false;
         return troop.Position == Position;
     }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Position);
+    }
+
 }
 
 readonly struct Tower((int, int) position, string name, bool defenders)
@@ -179,8 +185,7 @@ static class Agent
                 .MinBy(b => Distance(actualTroop, b.Item2 as Tower?)).Item2);
     }
 
-    public static (IntentionAction, object?) Nlp(string message, Troop actualTroop, IEnumerable<Troop> troops,
-        IEnumerable<Tower> towers)
+    public static (IntentionAction, object?) Nlp(string message, Troop actualTroop, IEnumerable<Troop> troops, IEnumerable<Tower> towers)
     {
         var split = message.Split();
         object? target = null;
