@@ -109,6 +109,18 @@ var morale: float
 var injured: int
 var supplies: int
 
+func to_dict(game_controller: GameController) -> Dictionary:
+	return {
+		"unit_name": unit_name,
+		"current_position": current_position,
+		"team": team,
+		"count": count,
+		"supplies": supplies,
+		"terrain": int(game_controller.game_map.get_terrain_at(current_position)),
+		"height": game_controller.game_map.get_height_at(current_position),
+		"desire": agent.get_desire() if agent is SmartAgentInterface else -1
+	}
+
 func normal_distribution(mean: float, std_dev: float):
 	var u1 = randf()
 	var u2 = randf()

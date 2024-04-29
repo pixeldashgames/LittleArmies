@@ -19,18 +19,53 @@ var _current_selector_state: SelectorState = SelectorState.IDLE
 
 var _hovered_selector: MoveSelector = null
 
+var _giving_order = false
+
 var _possible_moves
+
+var order_instance: OrderInterface
+
+func _ready():
+	order_instance = OrderInterface.instance
+	order_instance.prompt_entered.connect(on_order_entered)
+	order_instance.give_order_button_pressed.connect(on_give_order_button_pressed)
+	order_instance.cancel_button_pressed.connect(on_cancel_button_pressed)
+
+func on_give_order_button_pressed():
+	_giving_order = true
+	order_instance.hide_button()
+	var allied_targets = controller.units_array \
+		.filter(func(u): return u.agent is SmartAgentInterface) \
+		.map(func(u): return u.unit_name)
+	order_instance.open_prompter(allied_targets)
+
+func on_cancel_button_pressed():
+	_giving_order = false
+	order_instance.show_button()
+	order_instance.reset_prompt()
+
+func on_order_entered(target: String, prompt: String):
+	var target_unit = controller.units_array.filter(func(u): return u.unit_name == target)[0]
+	var target_agent = target_unit.agent as SmartAgentInterface
+	var result := await target_agent.receive_order(prompt)
+	if not result.success:
+		order_instance.prompt_error(result.error)
+	else:
+		order_instance.reset_prompt()
 
 func get_move() -> AgentMove:
 	var moves = controller.get_moves(unit, unit.current_position)
 	_possible_moves = moves.map(func(p): return p[0])
 
-	# _possible_moves = HexagonMath.get_cells_between(unit.current_position, \
-	# 	unit.current_position + Vector2i(10, -7))
 	build_selectors(_possible_moves)
 
 	_current_selector_state = SelectorState.SELECTING_MOVE
-	
+
+	if not order_instance:
+		order_instance = OrderInterface.instance
+
+	order_instance.show_button()
+
 	var starting_selector = get_selector_on_mouse(get_viewport().get_mouse_position())
 	if starting_selector != null:
 		_hovered_selector = starting_selector
@@ -84,7 +119,7 @@ func build_approach_selectors():
 		_hovered_selector = starting_selector
 		starting_selector.hover()
 	else:
-		_hovered_selector = null        
+		_hovered_selector = null
 
 func get_selector_on_mouse(mouse_pos) -> MoveSelector:
 	var from = get_viewport().get_camera_3d().project_ray_origin(mouse_pos)
@@ -105,7 +140,7 @@ func get_selector_on_mouse(mouse_pos) -> MoveSelector:
 	return selector
 
 func _input(event):
-	if _current_selector_state == SelectorState.IDLE:
+	if _current_selector_state == SelectorState.IDLE or _giving_order:
 		return
 
 	if event is InputEventMouseMotion:

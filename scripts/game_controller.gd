@@ -69,6 +69,14 @@ class Castle:
 				owner_team = -1
 				return CastleClaimResult.NEUTRALIZED
 		return CastleClaimResult.IN_PROGRESS
+	
+	func to_dict() -> Dictionary:
+		return {
+			"position": position,
+			"owner_team": owner_team,
+			"name": name,
+			"supplies": supplies
+		}
 			
 
 enum CastleClaimResult {

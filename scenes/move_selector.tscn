@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://dn2dip0sm43ji"]
 
-[ext_resource type="Script" path="res://scripts/move_selector.gd" id="1_t5k00"]
+[ext_resource type="Script" path="res://scripts/ui/move_selector.gd" id="1_t5k00"]
 [ext_resource type="Texture2D" uid="uid://cfj6yhwfk4282" path="res://art/textures/cell_highlight.png" id="2_mif2o"]
 
 [node name="MoveSelector" type="StaticBody3D"]
