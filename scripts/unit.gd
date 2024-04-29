@@ -127,6 +127,9 @@ func desert_units():
 	var desertion = roundi(can_desert * desertion_chance)
 	count -= desertion
 
+	if desertion > 0:
+		Logger.log_desertion(self, desertion)
+
 func end_of_day(in_castle: bool):
 	if supplies < count:
 		change_morale(missed_supply_morale_penalty * (supplies - count))
@@ -134,14 +137,19 @@ func end_of_day(in_castle: bool):
 					else expected_daily_morale_change_on_castle)
 	
 	# injured recovery / death
-	var dead = 0
-	var recovered = 0
+	var dead := 0
+	var recovered := 0
 	for i in range(injured):
 		var random = randf()
 		if random < injured_death_chance:
 			dead += 1
 		elif random < injured_death_chance + injured_recovery_chance:
 			recovered += 1
+
+	if dead > 0:
+		Logger.log_injured_died(self, dead)
+	if recovered > 0:
+		Logger.log_injured_recovered(self, recovered)
 
 	count -= dead
 	injured -= recovered + dead

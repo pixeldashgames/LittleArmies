@@ -42,18 +42,42 @@ class GetNextTriangleResponse:
 		cell = new_cell
 		left_cell = left
 
+static func get_cell_pos(cell: Vector2i) -> Vector2:
+	return Vector2(cell.x * 2 + posmod(cell.y, 2), cell.y * sqrt(3))
+
 static func get_cells_between(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	var cells: Array[Vector2i] = [ from ]
 
 	if from == to:
 		return cells
 
-	# var origin := Vector2(from.x * 2 + posmod(from.y, 2), from.y * sqrt(3))
-	# var current := origin
-	# var target := Vector2(to.x * 2 + posmod(to.y, 2), to.y * sqrt(3))
+	# var target := get_cell_pos(to)
 
-	# var adjacents = range(6).map(func(n): _hex_side_to_adjacent(from, n))
-	# var dots = adjacents.map(func(n): )
+	# var current := from
+
+	# while current != to:
+	# 	var current_pos = get_cell_pos(current)
+
+	# 	var adjacents = range(6).map(func(n): 
+	# 		var adj = _hex_side_to_adjacent(current, n)
+	# 		return [adj, get_cell_pos(adj)])
+		
+	# 	if adjacents.any(func(n): return n[0] == to):
+	# 		cells.append(to)
+	# 		return cells
+
+	# 	var dots = adjacents.map(func(n):
+	# 		return [n[0], (n[1] - current_pos).normalized().dot((target - current_pos).normalized())])
+		
+	# 	dots.sort_custom(func(a, b): return a[1] > b[1])
+
+	# 	if abs(dots[0][1] - dots[1][1]) <= 0.0001:
+	# 		cells.append(dots[1][0])
+
+	# 	current = dots[0][0]
+	# 	cells.append(current)
+	
+	# return cells
 
 	var from_pos = Vector2(from.x * 2 + posmod(from.y, 2), from.y * sqrt(3))
 	var to_pos = Vector2(to.x * 2 + posmod(to.y, 2), to.y * sqrt(3))

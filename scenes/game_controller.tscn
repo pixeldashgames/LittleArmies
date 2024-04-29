@@ -17,11 +17,11 @@
 [ext_resource type="PackedScene" uid="uid://d3g1whud6lm7y" path="res://scenes/renderers/shadowed_underground_renderer.tscn" id="11_kgcs2"]
 [ext_resource type="PackedScene" uid="uid://diaqvkpp57p3r" path="res://scenes/renderers/forests_renderer.tscn" id="12_0asyr"]
 [ext_resource type="PackedScene" uid="uid://b3ao22el2bixv" path="res://scenes/renderers/shadowed_water_renderer.tscn" id="13_tugmb"]
-[ext_resource type="Script" path="res://scripts/KnowledgeUpdater.cs" id="15_ktst3"]
 [ext_resource type="PackedScene" uid="uid://8adtmwsm68t2" path="res://scenes/renderers/shadowed_mountains_renderer.tscn" id="15_unf6s"]
 [ext_resource type="PackedScene" uid="uid://cmnpsjls51ua5" path="res://scenes/renderers/shadowed_forests_renderer.tscn" id="17_gar75"]
+[ext_resource type="Script" path="res://scripts/HexCellsBetween.cs" id="20_webjb"]
 
-[node name="Game" type="Node3D"]
+[node name="GameController" type="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0419369, -0.044529, -0.0145645)
 script = ExtResource("1_ceaui")
 morale_starting_values = Array[float]([1.0])
@@ -34,7 +34,6 @@ player_scene = ExtResource("3_3e20e")
 highlight_scene = ExtResource("3_jov1y")
 unit_properties_scene = ExtResource("5_fvalf")
 castle_properties_scene = ExtResource("6_wqs25")
-teams_unit_counts = null
 
 [node name="GameMap" parent="." instance=ExtResource("1_85pqf")]
 map_size = Vector2i(32, 32)
@@ -85,5 +84,5 @@ script = ExtResource("7_vnf7q")
 multi_mesh_scene = ExtResource("12_0asyr")
 mutli_mesh_shadowed_scene = ExtResource("17_gar75")
 
-[node name="KnowledgeUpdater" type="Node" parent="."]
-script = ExtResource("15_ktst3")
+[node name="HexMath" type="Node" parent="."]
+script = ExtResource("20_webjb")
