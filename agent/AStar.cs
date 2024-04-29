@@ -61,6 +61,8 @@ class AStar(Vector2I start, Vector2I end, Func<Vector2I, bool> finishCondition, 
         {
             var currentBlock = _openList[0];
 
+            GD.Print(currentBlock.GetPosition());
+
             _openList.Remove(currentBlock);
             _closedList.Add(currentBlock);
 
