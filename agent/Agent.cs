@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -136,7 +137,7 @@ static class Agent
         // Compare the towers position with the troops position and select the empty towers
         var troops = beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight or BeliefState.AlliesOnSight)
             .Select(b => b.Item2 as Troop?).ToList();
-        
+
         var towerCanGo = towers
             .Where(tower => troops.All(t => t?.Position != tower?.Position))
             .DefaultIfEmpty()
@@ -144,7 +145,7 @@ static class Agent
                 t));
 
         if (towerCanGo != null)
-            return actualTroop.Desire==DesireState.GoAhead?(IntentionAction.ConquerTower, towerCanGo): (IntentionAction.StayClose, beliefs.Where(b=>b.Item1==BeliefState.AlliesOnSight).MinBy(b=>Distance(actualTroop, b.Item2 as Troop?)).Item2);
+            return actualTroop.Desire == DesireState.GoAhead ? (IntentionAction.ConquerTower, towerCanGo) : (IntentionAction.StayClose, beliefs.Where(b => b.Item1 == BeliefState.AlliesOnSight).MinBy(b => Distance(actualTroop, b.Item2 as Troop?)).Item2);
 
         // Select the action to take for each enemy on sight
         foreach (var enemy in beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight)
@@ -179,17 +180,38 @@ static class Agent
                 .MinBy(b => Distance(actualTroop, b.Item2 as Tower?)).Item2);
     }
 
-    public static (IntentionAction, object?) Nlp(string message, Troop actualTroop, IEnumerable<Troop> troops,
+    public static async Task<(IntentionAction, object?)> Nlp(string message, Troop actualTroop, IEnumerable<Troop> troops,
         IEnumerable<Tower> towers)
     {
-        var split = message.Split();
+        var troopsName = troops.Select(t => t.Name).ToList();
+        troopsName.Add(actualTroop.Name);
+
+        var towersName = towers.Select(t => t.Name).ToList();
+
+        var orderAndName = new List<string>();
+
+        foreach (var name in troopsName)
+        {
+            orderAndName.Add("attack " + name);
+            orderAndName.Add("retreat " + name);
+            orderAndName.Add("stayclose " + name);
+            orderAndName.Add("wait " + name);
+            orderAndName.Add("move " + name);
+        }
+        foreach (var name in towersName)
+        {
+            orderAndName.Add("conquerTower " + name);
+        }
+
+        var order = await HttpConnection.SelectOption(message, orderAndName.ToArray());
+
+        var split = order!.Split();
         object? target = null;
         if (split.Length > 1)
         {
             var targetName = split[1..].Aggregate((a, b) => a + " " + b);
             target = troops.FirstOrDefault(t => t.Name == targetName);
-            if (target == null)
-                target = towers.FirstOrDefault(t => t.Name == targetName);
+            target ??= towers.FirstOrDefault(t => t.Name == targetName);
             if (target == null)
                 throw new ArgumentException("Target not found");
         }
