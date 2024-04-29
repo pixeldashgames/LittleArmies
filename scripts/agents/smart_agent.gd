@@ -11,14 +11,20 @@ class ReceiveOrderResult:
 
 @onready var csharp_agent = $AgentInterface
 
+func get_moves_func(p: Vector2i):
+    return controller.get_moves(unit, p)
+
+func get_adjacents_func(p: Vector2i):
+    return controller.game_map.get_directions(p).map(func(d): return p + d)
+
+func get_terrain_at_func(p: Vector2i):
+    return controller.game_map.get_terrain_at(p)
+
 func get_move():
     var params = get_csharp_params()
 
     var move = csharp_agent.GetMove(params[0], params[1], params[2], \
-        func(p): return controller.get_moves(unit, p), \
-        func(p): return controller.game_map.get_directions(p)\
-            .map(func(d): return p + d),
-        func(p): return int(controller.game_map.get_terrain_at(p)))
+        get_moves_func, get_adjacents_func, get_terrain_at_func)
     
     if move[2] as bool:
         return AgentMove.new(move[0][-1] as Vector2i, move[0] as Array, move[1] as Vector2i)

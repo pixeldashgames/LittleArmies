@@ -21,9 +21,10 @@ public partial class SmartAgentInterface : Node
 
     private (IntentionAction, object?)? orderedAction;
 
-    public Godot.Collections.Array GetMove(Dictionary thisUnit, Array<Dictionary> otherUnits, Array<Dictionary> castles, Callable getNeighbours, Callable getAdjacents, Callable getTerrainAt)
+    public Godot.Collections.Array GetMove(Dictionary thisUnit, Array<Dictionary> otherUnits, Vector2I mapMid, Array<Dictionary> castles, Callable getNeighbours, Callable getAdjacents, Callable getTerrainAt)
     {
         myTroop = DictToTroop(thisUnit);
+
         var troops = otherUnits.Select(DictToTroop).ToList();
         var towers = castles.Select(DictToTower).ToList();
 
@@ -37,6 +38,7 @@ public partial class SmartAgentInterface : Node
         {
             orderedAction = null;
             action = Agent.Agent.GetAction(myTroop, troops, towers);
+            GD.Print(action.ToString());
         }
 
         var myPos = new Vector2I(myTroop.Position.Item1, myTroop.Position.Item2);
@@ -98,11 +100,36 @@ public partial class SmartAgentInterface : Node
         {
             case IntentionAction.Wait:
                 return [new Array<Vector2I> { myPos }, myPos, false];
+            case IntentionAction.Move:
+                var movePos = mapMid;
+                AStar moveAStar = new(myPos, movePos, p => (p - movePos).Length() <= 6, getNeighboursFunc);
+                var moveStep = moveAStar.FindPath()[0].GetPosition();
+
+
+                if (troops.Any(t => {
+                    var troopPos = new Vector2I(t.Position.Item1, t.Position.Item2);
+                    return troopPos == moveStep;
+                })) {
+                    var moveAdj = getAdjacentsFunc(moveStep)
+                        .Where(p => neighbourPaths.Any(n => n.neigh == p)).ToArray();
+                    
+                    var r = new Random();
+
+                    moveStep = moveAdj[r.Next() % moveAdj.Length];
+
+                    var moveP = neighbourPaths.First(n => n.neigh == moveStep).path;
+
+                    return [moveP, moveStep, false];
+                }
+
+                var movePath = neighbourPaths.First(n => n.neigh == moveStep).path;
+
+                return [movePath, movePos, false];
             case IntentionAction.ConquerTower:
                 var towerTarget = ((Tower)action.Item2!).Position;
                 var towerPos = new Vector2I(towerTarget.Item1, towerTarget.Item2);
-                AStar towerAStart = new(myPos, towerPos, p => p == towerPos, getNeighboursFunc);
-                var stepPos = towerAStart.FindPath()[0].GetPosition();
+                AStar towerAStar = new(myPos, towerPos, p => p == towerPos, getNeighboursFunc);
+                var stepPos = towerAStar.FindPath()[0].GetPosition();
 
                 var path = neighbourPaths.First(n => n.neigh == stepPos).path;
 

@@ -162,8 +162,6 @@ func _ready():
 	_run_full_render()
 	_generate_units()
 
-	print(hex_math.GetCellsBetween(Vector2i(3, 0), Vector2i(3, 5)))
-
 	for team in range(len(teams_unit_counts)):
 		teams_knowledge.append(\
 			Knowledge.new(game_map.map_generator.width,\
