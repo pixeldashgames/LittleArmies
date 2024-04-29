@@ -19,11 +19,11 @@ public partial class SmartAgentInterface : Node
 
     [Signal]
     // [success, error_message]
-    public delegate Godot.Collections.Array OnPromptReceivedEventHandler();
+    public delegate Array OnPromptReceivedEventHandler();
 
     private (IntentionAction, object?)? orderedAction;
 
-    public Godot.Collections.Array GetMove(Dictionary thisUnit, Array<Dictionary> otherUnits, Array<Dictionary> castles, Vector2I mapMid, Callable getNeighbours, Callable getAdjacents, Callable getTerrainAt)
+    public Array GetMove(Dictionary thisUnit, Array<Dictionary> otherUnits, Array<Dictionary> castles, Vector2I mapMid, Callable getNeighbours, Callable getAdjacents, Callable getTerrainAt)
     {
         // don't include moves to enemies
 
@@ -41,10 +41,10 @@ public partial class SmartAgentInterface : Node
         else
         {
             orderedAction = null;
-            action = Agent.Agent.GetAction(myTroop, troops, towers);
+            action = Agent.Agent.GetAction(myTroop, troops, towers, getNeighboursFunc);
         }
 
-        var myPos = new Vector2I(myTroop.Position.Item1, myTroop.Position.Item2);
+        var myPos = myTroop.Position;
 
         IEnumerable<Vector2I> getNeighboursFunc(Vector2I p)
         {
@@ -85,11 +85,7 @@ public partial class SmartAgentInterface : Node
 
         bool isTroopAt(Vector2I pos)
         {
-            return troops.Any(t =>
-            {
-                var troopPos = new Vector2I(t.Position.Item1, t.Position.Item2);
-                return troopPos == pos;
-            })
+            return troops.Any(t => t.Position == pos);
         }
 
         T pickRandomElement<T>(IEnumerable<T> e)
@@ -102,16 +98,15 @@ public partial class SmartAgentInterface : Node
         Godot.Collections.Array getAttackResult()
         {
             var enemy = ((Troop)action.Item2!).Position;
-            var enemyPos = new Vector2I(enemy.Item1, enemy.Item2);
-            var attackAStarResult = AStar.Find(myPos, enemyPos, p => p == enemyPos, getNeighboursFunc).ToArray();
+            var attackAStarResult = AStar.Find(myPos, enemy, p => p == enemy, getNeighboursFunc).ToArray();
 
             GD.PrintS("A* result:\n", string.Join(',', attackAStarResult));
 
             var attackPos = attackAStarResult.Length == 1 ? attackAStarResult[0] : attackAStarResult[1];
 
-            if (attackPos == enemyPos)
+            if (attackPos == enemy)
             {
-                var attack_from = getAdjacentsFunc(enemyPos)
+                var attack_from = getAdjacentsFunc(enemy)
                     .Where(p => neighbourPaths.Any(n => n.neigh == p))
                     .OrderByDescending(p => (int)getTerrainAtFunc(p)).First();
 
@@ -157,9 +152,7 @@ public partial class SmartAgentInterface : Node
             case IntentionAction.ConquerTower:
                 GD.PrintS("Starting A* from ConquerTower, target =", ((Tower)action.Item2!).ToString());
                 var towerTarget = ((Tower)action.Item2!).Position;
-
-                var towerPos = new Vector2I(towerTarget.Item1, towerTarget.Item2);
-                var towerAStarResult = AStar.Find(myPos, towerPos, p => p == towerPos, getNeighboursFunc).ToArray();
+                var towerAStarResult = AStar.Find(myPos, towerTarget, p => p == towerTarget, getNeighboursFunc).ToArray();
 
                 var stepPos = towerAStarResult.Length == 1 ? towerAStarResult[0] : towerAStarResult[1];
 
@@ -169,14 +162,26 @@ public partial class SmartAgentInterface : Node
                 var path = neighbourPaths.First(n => n.neigh == stepPos).path;                
 
                 return [path, stepPos, false];
+            case IntentionAction.GetSuplies:
+                GD.PrintS("Starting A* from GetSupplies, target =", ((Tower)action.Item2!).ToString());
+                var suppliesTarget = ((Tower)action.Item2!).Position;
+                var suppliesAStarResult = AStar.Find(myPos, suppliesTarget, p => p == suppliesTarget, getNeighboursFunc).ToArray();
+
+                var suppliesStepPos = suppliesAStarResult.Length == 1 ? suppliesAStarResult[0] : suppliesAStarResult[1];
+
+                if (isTroopAt(suppliesStepPos))
+                    suppliesStepPos = pickRandomElement(getValidAdjacents(suppliesStepPos));
+
+                var suppliesPath = neighbourPaths.First(n => n.neigh == suppliesStepPos).path;
+
+                return [suppliesPath, suppliesStepPos, false];
             case IntentionAction.Attack:
                 GD.PrintS("Starting A* from Attack, target =", ((Troop)action.Item2!).ToString());
                 return getAttackResult();
             case IntentionAction.StayClose:
                 GD.PrintS("Starting A* from StayClose, target =", ((Troop)action.Item2!).ToString());
                 var ally = ((Troop)action.Item2!).Position;
-                var allyPos = new Vector2I(ally.Item1, ally.Item2);
-                var stayCloseAStarResult = AStar.Find(myPos, allyPos, p => (p - allyPos).Length() <= 4, getNeighboursFunc).ToArray();
+                var stayCloseAStarResult = AStar.Find(myPos, ally, p => (p - ally).Length() <= 4, getNeighboursFunc).ToArray();
                 var stayClosePos = stayCloseAStarResult.Length == 1 ? stayCloseAStarResult[0] : stayCloseAStarResult[1];
 
                 if (isTroopAt(stayClosePos))
@@ -189,7 +194,7 @@ public partial class SmartAgentInterface : Node
                 GD.PrintS("Starting A* from Retreat, from =", ((Troop)action.Item2!).ToString());
                 var closestAllies = troops
                     .Where(t => t.Defenders == myTroop.Defenders)
-                    .Select(t => new Vector2I(t.Position.Item1, t.Position.Item2))
+                    .Select(t => t.Position)
                     .OrderBy(t => (t - myPos).Length()).ToArray();
 
                 if (closestAllies.Length == 0)
@@ -210,8 +215,6 @@ public partial class SmartAgentInterface : Node
                 throw new IndexOutOfRangeException();
         }
     }
-
-
 
     public async Task ReceiveOrder(string prompt, Dictionary thisUnit, Array<Dictionary> otherUnits, Array<Dictionary> castles)
     {
@@ -253,7 +256,8 @@ public partial class SmartAgentInterface : Node
         var tower = new Tower(
             (pos.X, pos.Y),
             (string)dict["name"],
-            towerTeam
+            towerTeam,
+            (int)dict["supplies"]
         );
 
         GD.PrintS("Converting dict to Tower, from", dict.ToString(), "to", tower);
@@ -288,14 +292,15 @@ public partial class SmartAgentInterface : Node
         else
             desire = DesireState.GoAhead;
 
-        var troop = new Troop(
+        var troop = new Troop( 
             (pos.X, pos.Y),
             (int)dict["count"],
             desire,
             terrain,
             (float)dict["height"],
             (string)dict["unit_name"],
-            (int)dict["team"] == 0
+            (int)dict["team"] == 0,
+            (int)dict["supplies"]
         );
 
         GD.PrintS("Converting dict to Troop, from", dict.ToString(), "to", troop);

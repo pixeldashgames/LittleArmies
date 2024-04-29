@@ -112,10 +112,10 @@ static class Agent
     }
 
     public static (IntentionAction, object?) GetAction(Troop actualTroop, IEnumerable<Troop> troops,
-        IEnumerable<Tower> towers, Func<Vector2I, IEnumerable<Vector2I>> getNeightbor)
+        IEnumerable<Tower> towers, Func<Vector2I, IEnumerable<Vector2I>> getNeighbours)
     {
         var beliefs = GetBeliefs(actualTroop, troops, towers).ToArray();
-        var intention = GetIntention(actualTroop, beliefs, getNeightbor);
+        var intention = GetIntention(actualTroop, beliefs, getNeighbours);
         return intention;
     }
 
@@ -164,7 +164,7 @@ static class Agent
     }
 
     private static (IntentionAction, object?) GetIntention(Troop actualTroop,
-        (BeliefState, object?)[] beliefs, Func<Vector2I, IEnumerable<Vector2I>> getNeightbor)
+        (BeliefState, object?)[] beliefs, Func<Vector2I, IEnumerable<Vector2I>> getNeighbours)
     {
         List<(IntentionAction, object?)> actions = [];
 
@@ -215,10 +215,10 @@ static class Agent
                 .DefaultIfEmpty()
                 .MinBy(t => Distance(actualTroop,
                     t));
-            if (tower != null)
+            if (tower != null) 
             {
                 // Check if the amount of turns to get the supplies equal to the amount of supplies that can be spent on the way
-                var wayToTower = AStar.Find(actualTroop.Position, tower.Value.GetVector2I(), n => n == tower.Value.GetVector2I(), getNeightbor);
+                var wayToTower = AStar.Find(actualTroop.Position, tower.Value.GetVector2I(), n => n == tower.Value.GetVector2I(), getNeighbours);
                 if (wayToTower.Count() == actualTroop.Supplies / actualTroop.Troops)
                     return (IntentionAction.GetSuplies, tower);
             }
