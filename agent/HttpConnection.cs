@@ -4,6 +4,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
 
+#nullable enable
+
 namespace Agent;
 
 class HttpConnection

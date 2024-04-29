@@ -4,4 +4,4 @@
 - Alfredo Montero Lopez C411
 
 # Proyecto
-(Codigo en desarrollo)
+Aplicacion desarrollada en GoDot, para ejecutar descomprimir el archivo rar en la sección de release
