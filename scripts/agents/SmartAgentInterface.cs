@@ -109,21 +109,16 @@ public partial class SmartAgentInterface : Node
 
         Array getAttackResult()
         {
-            var enemy = ((Troop)action.Item2!).Position;
+            var enemy_troop = (Troop)action.Item2!;
+            var enemy = enemy_troop.Position;
             var attackAStarResult = AStar.Find(myPos, enemy, p => p == enemy, getNeighboursFunc).ToArray();
 
             if (attackAStarResult.Length == 1)
                 throw new ArgumentException($"Enemy {(Troop)action.Item2!} on agent {myTroop} spot?");
 
-            if (!troops.Any(t => t.Position == enemy && t.Defenders != myTroop.Defenders))
-            {
-                GD.PrintErr($"Enemy {(Troop)action.Item2!} not found on troops list");
-                throw new ArgumentException($"Enemy {(Troop)action.Item2!} not found on troops list");
-            }
-
             var attackPos = attackAStarResult.Length == 1 ? attackAStarResult[0] : attackAStarResult[1];
 
-            if (attackPos == enemy)
+            if (attackPos == enemy && enemy_troop.PositionKnown)
             {
                 var attack_from = getAdjacentsFunc(enemy)
                     .Where(p => neighbourPaths.Any(n => n.neigh == p) && !isTroopAt(p))
@@ -313,7 +308,8 @@ public partial class SmartAgentInterface : Node
             (float)dict["height"],
             (string)dict["unit_name"],
             (int)dict["team"] == 0,
-            (int)dict["supplies"]
+            (int)dict["supplies"],
+            (bool)dict["position_known"]
         );
 
         return troop;

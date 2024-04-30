@@ -148,6 +148,8 @@ signal game_over(result: GameOverResult)
 @onready var forests_renderer = $ForestsRenderer
 @onready var mountains_renderer = $MountainsRenderer
 
+var is_test = false
+
 var defenders_battles_won = 0
 var attackers_battles_won = 0
 var total_duration = 0
@@ -163,11 +165,14 @@ var teams_knowledge: Array[Knowledge] = []
 
 var castles: Array[Castle] = []
 
-func _ready():
+func start_game():
 	game_map.generate()
 
 	_run_full_render()
 	_generate_units()
+
+	teams_knowledge = []
+	castles = []
 
 	for team in range(len(teams_unit_counts)):
 		teams_knowledge.append(\
@@ -196,6 +201,9 @@ func _ready():
 	camera.limits = Rect2(Vector2.ZERO, game_map.get_game_pos2d(game_map.get_size()))
 
 func _run_full_render():
+	if is_test:
+		return
+
 	terrain_renderer.render(game_map)
 	underground_renderer.render(game_map)
 	water_renderer.render(game_map)
@@ -203,6 +211,9 @@ func _run_full_render():
 	mountains_renderer.render(game_map)
 
 func _render_all_shadows(team: int):
+	if is_test:
+		return
+
 	var visibility_function: Callable
 	if team == - 1:
 		visibility_function = func(pos: Vector2i): \
@@ -270,7 +281,8 @@ func _game_loop():
 
 					_update_knowledge(unit)
 
-			time_between_turns.start()
+			if not is_test:
+				time_between_turns.start()
 			_update_units(player_team())
 			_update_castles()
 			_render_all_shadows(player_team())
@@ -278,7 +290,7 @@ func _game_loop():
 			if _is_game_over() != GameOverResult.NOT_OVER:
 				break
 
-			if not time_between_turns.is_stopped():
+			if not is_test and not time_between_turns.is_stopped():
 				await time_between_turns.timeout
 		total_duration += 1
 	
@@ -502,6 +514,8 @@ func _is_game_over() -> GameOverResult:
 		return GameOverResult.NOT_OVER
 
 func _generate_units():
+	units_array = []
+
 	var max_units_per_row = 1 + game_map.get_playable_size().x / unit_separation
 	
 	for i in range(len(teams_unit_counts)):
@@ -526,16 +540,15 @@ func _generate_units_row(team: int, count: int, row: int):
 
 func _generate_unit_at(pos: Vector2i, team: int):
 	var array = defender_scenes if team == 0 else attacker_scenes
-	var unit_scene = array.pick_random()
-	array.erase(unit_scene)
+
+	var unit_scene = array[units_array.size() % array.size()]
 
 	var unit = unit_scene.instantiate() as Unit
 
 	units_parent.add_child(unit)
 	if team == 0:
 		unit.rotation_degrees.y = 180
-	var unit_name = unit_names.pick_random()
-	unit_names.erase(unit_name)
+	var unit_name = unit_names[units_array.size()]
 	unit.initialize(self, unit_name, pos, team, count_starting_values.pick_random(), \
 		morale_starting_values.pick_random(), 0, supplies_starting_values.pick_random())
 	units_array.append(unit)

@@ -1,6 +1,20 @@
-[gd_scene load_steps=2 format=3 uid="uid://cr7xpjombncs"]
+[gd_scene load_steps=10 format=3 uid="uid://cr7xpjombncs"]
 
 [ext_resource type="Script" path="res://scripts/tester.gd" id="1_fso5h"]
+[ext_resource type="Resource" uid="uid://cqv8n3tynxmvc" path="res://scenes/tests/normal_test.tres" id="2_5n186"]
+[ext_resource type="PackedScene" uid="uid://cutn6ugisyp1m" path="res://scenes/main.tscn" id="2_7adkc"]
+[ext_resource type="Resource" uid="uid://dvx0skn3bgbj5" path="res://scenes/tests/montains_test.tres" id="3_anoyf"]
+[ext_resource type="Resource" uid="uid://ct2rbnv1uc0b4" path="res://scenes/tests/forest.tres" id="4_iboor"]
+[ext_resource type="PackedScene" uid="uid://kyj353asqmpd" path="res://scenes/units/kalm_attacker.tscn" id="4_v47mo"]
+[ext_resource type="PackedScene" uid="uid://cwq05q1j7y6oc" path="res://scenes/units/kalm_defender.tscn" id="5_kn43f"]
+[ext_resource type="PackedScene" uid="uid://dbfiadt6lyihi" path="res://scenes/units/rush_attacker.tscn" id="6_x2yx2"]
+[ext_resource type="PackedScene" uid="uid://cfyftids0wiyy" path="res://scenes/units/rush_defender.tscn" id="7_qfgvp"]
 
 [node name="Tester" type="Node"]
 script = ExtResource("1_fso5h")
+configs = Array[Resource("res://scripts/test_config.gd")]([ExtResource("2_5n186"), ExtResource("3_anoyf"), ExtResource("4_iboor")])
+main_scene = ExtResource("2_7adkc")
+calm_attacker_scene = ExtResource("4_v47mo")
+calm_defender_scene = ExtResource("5_kn43f")
+rushing_attacker_scene = ExtResource("6_x2yx2")
+rushing_defender_scene = ExtResource("7_qfgvp")

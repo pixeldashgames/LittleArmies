@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="CalmRushRatio" load_steps=2 format=3 uid="uid://cs7uh6s6nun8u"]
+
+[ext_resource type="Script" path="res://scripts/calm_rush_ratio.gd" id="1_a1rcm"]
+
+[resource]
+script = ExtResource("1_a1rcm")
+calm = 4
+rush = 1

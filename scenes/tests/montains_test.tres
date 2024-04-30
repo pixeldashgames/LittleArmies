@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="TestConfig" load_steps=11 format=3 uid="uid://dvx0skn3bgbj5"]
+
+[ext_resource type="Resource" uid="uid://b7elkpbb0qpcg" path="res://scenes/tests/ratios/2_3vs0_5.tres" id="1_edndx"]
+[ext_resource type="Script" path="res://scripts/test_config.gd" id="1_ie8dc"]
+[ext_resource type="Resource" uid="uid://dr7flveh5elo7" path="res://scenes/tests/ratios/2_3vs1_4.tres" id="2_1c0gl"]
+[ext_resource type="Resource" uid="uid://dqyk1b2xdr566" path="res://scenes/tests/ratios/2_3vs3_2.tres" id="3_mfejx"]
+[ext_resource type="Resource" uid="uid://bom47h3wmi70o" path="res://scenes/tests/ratios/3_2vs0_5.tres" id="4_pjk4j"]
+[ext_resource type="Resource" uid="uid://cmarus5bxjpcq" path="res://scenes/tests/ratios/3_2vs1_4.tres" id="5_ubu45"]
+[ext_resource type="Resource" uid="uid://d0ic1r7c7uurs" path="res://scenes/tests/ratios/3_2vs3_2.tres" id="6_5txdn"]
+[ext_resource type="Resource" uid="uid://du0orsnnvpdkd" path="res://scenes/tests/ratios/5_0vs0_5.tres" id="7_5q8tv"]
+[ext_resource type="Resource" uid="uid://chy5xw51rp8rq" path="res://scenes/tests/ratios/5_0vs1_4.tres" id="8_26n85"]
+[ext_resource type="Resource" uid="uid://bwdh1aawtoto4" path="res://scenes/tests/ratios/5_0vs3_2.tres" id="9_oi1x8"]
+
+[resource]
+script = ExtResource("1_ie8dc")
+test_name = "Montain Range"
+test_count = 25
+forest_threshold = 0.75
+mountain_threshold = 0.5
+ratios = Array[Resource("res://scripts/game_units_ratio.gd")]([ExtResource("1_edndx"), ExtResource("2_1c0gl"), ExtResource("3_mfejx"), ExtResource("4_pjk4j"), ExtResource("5_ubu45"), ExtResource("6_5txdn"), ExtResource("7_5q8tv"), ExtResource("8_26n85"), ExtResource("9_oi1x8")])

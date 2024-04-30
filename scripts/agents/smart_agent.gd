@@ -37,6 +37,7 @@ func get_move():
 	
 func get_csharp_params() -> Array:
 	var this_unit = unit.to_dict(controller)
+	this_unit["position_known"] = true
 	var other_units = controller.units_array.filter(func(u): 
 		if u == unit:
 			return false
@@ -52,6 +53,9 @@ func get_csharp_params() -> Array:
 			var dict = u.to_dict(controller)
 			if u.team != unit.team:
 				dict["current_position"] = controller.teams_knowledge[unit.team].enemy_positions[u].position
+				dict["position_known"] = controller.teams_knowledge[unit.team].enemy_positions[u].last_seen == 0
+			else:
+				dict["position_known"] = true
 			return dict)
 	var castles = controller.castles.map(func(c): return c.to_dict())
 
