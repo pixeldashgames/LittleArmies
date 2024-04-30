@@ -45,7 +45,7 @@ public partial class SmartAgentInterface : Node
                 orderedAction = (orderedAction.Value.Item1, towers.First(t => t.Name == ((Tower)orderedAction.Value.Item2!).Name));
         }
 
-        if (orderedAction.HasValue && Agent.Agent.CheckOrder(orderedAction.Value.Item1, myTroop, troops, towers))
+        if (orderedAction.HasValue && Agent.Agent.CheckOrder(orderedAction.Value.Item1, orderedAction.Value.Item2, myTroop, troops, towers))
         {
             action = orderedAction.Value;
         }

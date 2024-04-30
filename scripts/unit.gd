@@ -31,7 +31,7 @@ const height_increase_effect_curve_on_damage := 2.0
 const height_decrease_effect_curve_on_damage := 0.5
 const height_difference_effect_range := Vector2(0, 1.5)
 
-const max_supplies = 1500
+const max_supplies = 500
 
 const missed_supply_morale_penalty = 0.005
 const killed_unit_morale_penalty = 0.01

@@ -129,7 +129,7 @@ const castle_vigilance_range: float = 5
 @export var highlight_scene: PackedScene
 @export var unit_properties_scene: PackedScene
 @export var castle_properties_scene: PackedScene
-@export var teams_unit_counts: Array[int] = [5, 5]
+@export var teams_unit_counts: Array[int] = [5, 5] 
 
 @onready var game_map: GameMap = $GameMap
 @onready var units_parent: Node3D = $Units

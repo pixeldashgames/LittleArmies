@@ -1,6 +1,6 @@
 extends CellRenderer
 
-func render(game_map: GameMap, from: Vector2i, to: Vector2i):
+func render(game_map: GameMap, from: Vector2i, to: Vector2i, cascade: int, total_cascades: int):
 	var mountains_array = game_map.mountains_array
 
 	var new_multimesh = MultiMesh.new()
@@ -8,6 +8,14 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i):
 	new_multimesh.use_colors = true
 	new_multimesh.mesh = multimesh.mesh
 	multimesh = new_multimesh
+
+	if cascade != total_cascades:
+		# create a new material off the overlay and change the albedo alpha
+		var material = material_overlay
+		material = material.duplicate()
+		material.albedo_color.a = lerpf(0, material.albedo_color.a, 1 - float(cascade) / total_cascades)
+		material_overlay = material
+
 
 	var transforms = []
 
