@@ -17,3 +17,5 @@ material_override = SubResource("StandardMaterial3D_8sh0n")
 cast_shadow = 0
 multimesh = SubResource("MultiMesh_tfxlm")
 script = ExtResource("2_2ysky")
+normal_water_color = Color(0.121569, 0.415686, 0.560784, 1)
+fully_shadowed_water_color = Color(0.0235294, 0.137255, 0.231373, 1)
