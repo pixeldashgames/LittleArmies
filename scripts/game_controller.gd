@@ -159,6 +159,7 @@ var castles: Array[Castle] = []
 
 func _ready():
 	game_map.generate()
+
 	_run_full_render()
 	_generate_units()
 
@@ -186,6 +187,7 @@ func _ready():
 	var mid_map = game_map.get_game_pos(game_map.get_size() / 2)
 	mid_map.y = 10
 	camera.position = mid_map
+	camera.limits = Rect2(Vector2.ZERO, game_map.get_game_pos2d(game_map.get_size()))
 
 func _run_full_render():
 	terrain_renderer.render(game_map)

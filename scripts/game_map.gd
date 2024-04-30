@@ -74,6 +74,11 @@ func get_game_pos(matrix_pos: Vector2i):
 	var z_pos = matrix_pos.y * sqrt(3)
 	return Vector3(x_pos, get_height_at(matrix_pos), z_pos)
 
+func get_game_pos2d(matrix_pos: Vector2i):
+	var x_pos = matrix_pos.x * 2 + posmod(matrix_pos.y, 2)
+	var z_pos = matrix_pos.y * sqrt(3)
+	return Vector2(x_pos, z_pos)
+
 func get_terrain_at(pos: Vector2i) -> TerrainType:
 	if has_water_in(pos):
 		return TerrainType.WATER
