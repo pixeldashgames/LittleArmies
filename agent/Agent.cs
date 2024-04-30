@@ -158,8 +158,6 @@ static class Agent
                     beliefs.Add((BeliefState.EnemyTowerInRange, tower));
             }
         }
-
-
         return beliefs;
     }
 
@@ -265,7 +263,6 @@ static class Agent
         IEnumerable<Tower> towers)
     {
         var troopsName = troops.Select(t => t.Name).ToList();
-        troopsName.Add(actualTroop.Name);
 
         var towersName = towers.Select(t => t.Name).ToList();
 
@@ -276,9 +273,10 @@ static class Agent
             orderAndName.Add("attack " + name);
             orderAndName.Add("retreat " + name);
             orderAndName.Add("stayclose " + name);
-            orderAndName.Add("wait " + name);
-            orderAndName.Add("move " + name);
         }
+
+        orderAndName.Add("wait");
+
         foreach (var name in towersName)
         {
             orderAndName.Add("attack " + name);
@@ -292,10 +290,16 @@ static class Agent
         if (split.Length > 1)
         {
             var targetName = split[1..].Aggregate((a, b) => a + " " + b);
-            target = troops.FirstOrDefault(t => t.Name == targetName);
-            target ??= towers.FirstOrDefault(t => t.Name == targetName);
-            if (target == null)
-                throw new PromptException("Target not found");
+            var filteredTroops = troops.Where(t => t.Name == targetName).ToArray();
+            if (filteredTroops.Length != 0)
+                target = filteredTroops[0];
+            else{
+                var filteredTowers = towers.Where(t => t.Name == targetName).ToArray();
+                if (filteredTowers.Length != 0)
+                    target = filteredTowers[0];
+                else
+                    throw new PromptException("Target not found");
+            }
         }
 
         switch (split[0].ToLower())

@@ -51,49 +51,41 @@ const injured_death_chance = 0.1
 const injured_recovery_chance = 0.15
 
 const terrain_advantage = {
-	TerrainType.PLAIN: {
-		TerrainType.PLAIN: 1,
-		TerrainType.FOREST: 0.8,
-		TerrainType.MOUNTAIN: 0.6,
-		TerrainType.WATER: 1.5,
-		TerrainType.CASTLE: 0.5
+	GameMap.TerrainType.PLAIN: {
+		GameMap.TerrainType.PLAIN: 1,
+		GameMap.TerrainType.FOREST: 0.8,
+		GameMap.TerrainType.MOUNTAIN: 0.6,
+		GameMap.TerrainType.WATER: 1.5,
+		GameMap.TerrainType.CASTLE: 0.5
 	},
-	TerrainType.FOREST: {
-		TerrainType.PLAIN: 1.2,
-		TerrainType.FOREST: 0.8,
-		TerrainType.MOUNTAIN: 0.8,
-		TerrainType.WATER: 1.3,
-		TerrainType.CASTLE: 0.5
+	GameMap.TerrainType.FOREST: {
+		GameMap.TerrainType.PLAIN: 1.2,
+		GameMap.TerrainType.FOREST: 0.8,
+		GameMap.TerrainType.MOUNTAIN: 0.8,
+		GameMap.TerrainType.WATER: 1.3,
+		GameMap.TerrainType.CASTLE: 0.5
 	},
-	TerrainType.MOUNTAIN: {
-		TerrainType.PLAIN: 1.4,
-		TerrainType.FOREST: 0.8,
-		TerrainType.MOUNTAIN: 0.9,
-		TerrainType.WATER: 1.5,
-		TerrainType.CASTLE: 0.5
+	GameMap.TerrainType.MOUNTAIN: {
+		GameMap.TerrainType.PLAIN: 1.4,
+		GameMap.TerrainType.FOREST: 0.8,
+		GameMap.TerrainType.MOUNTAIN: 0.9,
+		GameMap.TerrainType.WATER: 1.5,
+		GameMap.TerrainType.CASTLE: 0.5
 	},
-	TerrainType.WATER: {
-		TerrainType.PLAIN: 0.8,
-		TerrainType.FOREST: 0.7,
-		TerrainType.MOUNTAIN: 0.5,
-		TerrainType.WATER: 1,
-		TerrainType.CASTLE: 0.5
+	GameMap.TerrainType.WATER: {
+		GameMap.TerrainType.PLAIN: 0.8,
+		GameMap.TerrainType.FOREST: 0.7,
+		GameMap.TerrainType.MOUNTAIN: 0.5,
+		GameMap.TerrainType.WATER: 1,
+		GameMap.TerrainType.CASTLE: 0.5
 	},
-	TerrainType.CASTLE: {
-		TerrainType.PLAIN: 1.5,
-		TerrainType.FOREST: 1.4,
-		TerrainType.MOUNTAIN: 1.3,
-		TerrainType.WATER: 2,
-		TerrainType.CASTLE: 1
-	}
-}
-
-enum TerrainType {
-	PLAIN = 0,
-	FOREST = 1,
-	MOUNTAIN = 2,
-	WATER = 3,
-	CASTLE = 4
+	GameMap.TerrainType.CASTLE: {
+		GameMap.TerrainType.PLAIN: 1.5,
+		GameMap.TerrainType.FOREST: 1.4,
+		GameMap.TerrainType.MOUNTAIN: 1.3,
+		GameMap.TerrainType.WATER: 2,
+		GameMap.TerrainType.CASTLE: 1
+	} 
 }
 
 @onready var agent: Agent = $Agent
@@ -225,7 +217,7 @@ func damage_dealt_to_enemy(killed: int, _injured: int):
 	change_morale(enemy_killed_morale_boost * killed + enemy_injured_morale_boost * _injured)
 
 # Returns [killed, injured]
-func get_damage(my_terrain: TerrainType, other_unit_terrain: TerrainType, my_height: float, other_unit_height: float, advantage: bool) -> Array[float]:
+func get_damage(my_terrain: GameMap.TerrainType, other_unit_terrain: GameMap.TerrainType, my_height: float, other_unit_height: float, advantage: bool) -> Array[float]:
 	var effective_count = count - injured
 	var morale_modifier = ease(morale, morale_effect_curve_on_damage_chance)
 	var terrain_modifier = terrain_advantage[my_terrain][other_unit_terrain]

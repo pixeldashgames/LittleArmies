@@ -3,6 +3,8 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
+using Godot;
+using HttpClient = System.Net.Http.HttpClient;
 
 #nullable enable
 
@@ -42,16 +44,19 @@ class HttpConnection
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestData), Encoding.UTF8,
             "application/json");
         
-        
         try
         {
             // Make the POST request
             var response = await client.PostAsync(apiUrl, jsonContent);
 
+            GD.Print(response);
+
             // Handle the response
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
+                GD.PrintS("Contents\n\t", responseContent);
+
                 var root = JsonSerializer.Deserialize<Root>(responseContent);
                 return root?.candidates[0].content.parts[0].text;
             }

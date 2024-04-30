@@ -35,7 +35,7 @@ func on_give_order_button_pressed():
 	_giving_order = true
 	order_instance.hide_button()
 	var allied_targets = controller.units_array \
-		.filter(func(u): return u.agent is SmartAgentInterface) \
+		.filter(func(u): return u.agent is SmartAgentInterface and u.team == unit.team) \
 		.map(func(u): return u.unit_name)
 	order_instance.open_prompter(allied_targets)
 
@@ -49,9 +49,10 @@ func on_order_entered(target: String, prompt: String):
 	var target_agent = target_unit.agent as SmartAgentInterface
 	var result := await target_agent.receive_order(prompt)
 	if not result.success:
-		order_instance.prompt_error(result.error)
+		order_instance.prompt_error(result.error_message)
 	else:
 		order_instance.reset_prompt()
+		_giving_order = false
 
 func get_move() -> AgentMove:
 	var moves = controller.get_moves(unit, unit.current_position)
@@ -77,6 +78,8 @@ func get_move() -> AgentMove:
 
 	var entry_path = moves.filter(func(m): return m[0] == _selected_pos)[0][1]
  
+	order_instance.hide_button()
+
 	return AgentMove.new(_selected_pos, entry_path, _selected_attack)
 
 func destroy_selectors():
