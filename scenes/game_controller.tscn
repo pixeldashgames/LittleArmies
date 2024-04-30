@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://bwro3su7uu5nc"]
+[gd_scene load_steps=22 format=3 uid="uid://bwro3su7uu5nc"]
 
 [ext_resource type="PackedScene" uid="uid://cmb1sw3nnmtwu" path="res://scenes/game_map.tscn" id="1_85pqf"]
 [ext_resource type="Script" path="res://scripts/game_controller.gd" id="1_ceaui"]
@@ -6,7 +6,6 @@
 [ext_resource type="PackedScene" uid="uid://cfyftids0wiyy" path="res://scenes/units/rush_defender.tscn" id="3_b7gfk"]
 [ext_resource type="PackedScene" uid="uid://ddah6l6dir1cc" path="res://scenes/hex_highlight.tscn" id="3_jov1y"]
 [ext_resource type="PackedScene" uid="uid://kyj353asqmpd" path="res://scenes/units/kalm_attacker.tscn" id="4_8po4t"]
-[ext_resource type="PackedScene" uid="uid://d3xrk6kvljv32" path="res://scenes/units/player_unit.tscn" id="5_6enpl"]
 [ext_resource type="PackedScene" uid="uid://des0k65qdru11" path="res://scenes/unit_properties.tscn" id="5_fvalf"]
 [ext_resource type="PackedScene" uid="uid://dbfiadt6lyihi" path="res://scenes/units/rush_attacker.tscn" id="5_jkc0a"]
 [ext_resource type="Script" path="res://scripts/camera_controller.gd" id="6_oqh7y"]
@@ -26,13 +25,13 @@
 [node name="GameController" type="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0419369, -0.044529, -0.0145645)
 script = ExtResource("1_ceaui")
-morale_starting_values = Array[float]([1.0])
-count_starting_values = Array[int]([20, 25, 50])
-supplies_starting_values = Array[int]([1000])
-castle_supplies_starting_values = Array[int]([5000, 6000, 7000])
+morale_starting_values = Array[float]([1.0, 0.9])
+count_starting_values = Array[int]([25, 30])
+supplies_starting_values = Array[int]([300, 250])
+castle_supplies_starting_values = Array[int]([1500, 2000])
 unit_names = Array[String](["Mc. Alfredo", "Mc. Anthuan", "Mc. Leo", "Mc. Kandal", "Mr. Bean", "Mr. Rice", "Mr. Fried Egg", "Generic Unit Name", "John", "Pepe Grillo"])
 defender_scenes = Array[PackedScene]([ExtResource("2_qxrmv"), ExtResource("2_qxrmv"), ExtResource("2_qxrmv"), ExtResource("3_b7gfk"), ExtResource("3_b7gfk")])
-attacker_scenes = Array[PackedScene]([ExtResource("4_8po4t"), ExtResource("4_8po4t"), ExtResource("5_6enpl"), ExtResource("5_jkc0a"), ExtResource("5_jkc0a")])
+attacker_scenes = Array[PackedScene]([ExtResource("4_8po4t"), ExtResource("4_8po4t"), ExtResource("4_8po4t"), ExtResource("5_jkc0a"), ExtResource("5_jkc0a")])
 highlight_scene = ExtResource("3_jov1y")
 unit_properties_scene = ExtResource("5_fvalf")
 castle_properties_scene = ExtResource("6_wqs25")

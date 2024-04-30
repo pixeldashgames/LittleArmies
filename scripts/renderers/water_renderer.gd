@@ -15,7 +15,7 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i, cascade: int, total
 	# create a new material off the overlay and change the albedo alpha
 	var material = material_override
 	material = material.duplicate()
-	material.albedo_color = fully_shadowed_water_color.lerp(normal_water_color, 1 - cascade / total_cascades)
+	material.albedo_color = normal_water_color.lerp(fully_shadowed_water_color, 1 - float(cascade) / total_cascades)
 	material_override = material
 
 	var transforms = []

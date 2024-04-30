@@ -11,9 +11,10 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i, cascade: int, total
 	
 	if cascade != total_cascades:
 		# create a new material off the overlay and change the albedo alpha
-		var material = material_overlay
-		material = material.duplicate()
-		material.albedo_color.a = lerpf(0, material.albedo_color.a, 1 - cascade / total_cascades)
+		var material = material_overlay.duplicate(true)
+		var col = material.albedo_color
+		col.a = lerpf(0, material.albedo_color.a, 1 - float(cascade) / total_cascades)
+		material.albedo_color = col
 		material_overlay = material
 
 	var transforms = []
