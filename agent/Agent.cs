@@ -293,7 +293,8 @@ static class Agent
             var filteredTroops = troops.Where(t => t.Name == targetName).ToArray();
             if (filteredTroops.Length != 0)
                 target = filteredTroops[0];
-            else{
+            else
+            {
                 var filteredTowers = towers.Where(t => t.Name == targetName).ToArray();
                 if (filteredTowers.Length != 0)
                     target = filteredTowers[0];
@@ -337,19 +338,21 @@ static class Agent
     /// <param name="towers"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public static bool CheckOrder(IntentionAction intentionAction, object? target, Troop actualTroop)
+    public static bool CheckOrder(IntentionAction intentionAction, object? target, Troop actualTroop, IEnumerable<Troop> troops,
+        IEnumerable<Tower> towers)
     {
-        // var beliefs = GetBeliefs(actualTroop, troops, towers);
+        var beliefs = GetBeliefs(actualTroop, troops, towers);
+        var availableTowers = towers.Where(tower => troops.All(t => t.GetVector2I() != tower.GetVector2I()));
         return intentionAction switch
         {
             IntentionAction.Attack or IntentionAction.Retreat => (target is Troop troop) && actualTroop.Defenders != troop.Defenders,
-            IntentionAction.ConquerTower => (target is Tower tower) && actualTroop.Defenders != tower.OccupiedByDefenders,
+            IntentionAction.ConquerTower => (target is Tower tower2) && actualTroop.Defenders != tower2.OccupiedByDefenders && availableTowers.Any(t => t.Name == tower2.Name),
             IntentionAction.StayClose => (target is Troop troop1)
                 ? actualTroop.Defenders != troop1.Defenders
                 : (target is Tower tower1) && actualTroop.Defenders == tower1.OccupiedByDefenders,
             IntentionAction.Wait => true,
             IntentionAction.Move => true,
-            IntentionAction.GetSuplies => target is Tower,
+            IntentionAction.GetSuplies => target is Tower tower && availableTowers.Any(t => t.Name == tower.Name),
             _ => throw new ArgumentOutOfRangeException()
         };
     }
