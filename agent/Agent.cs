@@ -235,7 +235,7 @@ static class Agent
         // When the desire is to stay close
 
         // if there is an enemy in range, attack the closest one
-        if (beliefs.Any(b => b.Item1 == BeliefState.EnemyInRange))
+        if (beliefs.Any(b => b.Item1 == BeliefState.EnemyInRange) && actions.Count > 0)
             return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
 
         // if there is an ally tower on sight, stay close to it
