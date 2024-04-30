@@ -252,7 +252,7 @@ static class Agent
         if (actualTroop.Desire == DesireState.StayCalm)
         {
             // if there is an enemy on sight, attack the closest one
-            if (beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight))
+            if (beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight) && actions.Count > 0)
                 return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
         }
 
