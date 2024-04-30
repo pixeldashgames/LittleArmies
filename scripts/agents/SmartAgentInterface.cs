@@ -147,10 +147,8 @@ public partial class SmartAgentInterface : Node
         switch (action.Item1)
         {
             case IntentionAction.Wait:
-                GD.Print("Wait");
                 return [new Array<Vector2I> { myPos }, myPos, false];
             case IntentionAction.Move:
-                GD.Print("Move");
                 var movePos = mapMid;
                 var aStarResult = AStar.Find(myPos, movePos, p => (p - movePos).Length() <= 6, getNeighboursFunc).ToArray();
 
@@ -165,7 +163,6 @@ public partial class SmartAgentInterface : Node
 
                 return retS;
             case IntentionAction.ConquerTower:
-                GD.Print("Conquer tower");
                 var towerTarget = ((Tower)action.Item2!).Position;
                 var towerAStarResult = AStar.Find(myPos, towerTarget, p => p == towerTarget, getNeighboursFunc).ToArray();
 
@@ -178,7 +175,6 @@ public partial class SmartAgentInterface : Node
 
                 return [path, stepPos, false];
             case IntentionAction.GetSuplies:
-                GD.Print("Get supplies");
                 var suppliesTarget = ((Tower)action.Item2!).Position;
                 var suppliesAStarResult = AStar.Find(myPos, suppliesTarget, p => p == suppliesTarget, getNeighboursFunc).ToArray();
 
@@ -191,10 +187,8 @@ public partial class SmartAgentInterface : Node
 
                 return [suppliesPath, suppliesStepPos, false];
             case IntentionAction.Attack:
-                GD.Print("Attack");
                 return getAttackResult();
             case IntentionAction.StayClose:
-                GD.Print("Stay close");
                 Vector2I ally;
                 if (action.Item2 is Troop troop)
                     ally = troop.Position;
@@ -213,7 +207,6 @@ public partial class SmartAgentInterface : Node
 
                 return [stayClosePath, stayClosePos, false];
             case IntentionAction.Retreat:
-                GD.Print("Retreat");
                 var closestAllies = troops
                     .Where(t => t.Defenders == myTroop.Defenders)
                     .Select(t => t.Position)
