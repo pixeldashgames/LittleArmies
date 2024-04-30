@@ -6,7 +6,7 @@ class EnemyPositionKnowledge:
 
 	@warning_ignore("shadowed_variable")
 	func _init():
-		self.position = Vector2i(-1, -1)
+		self.position = Vector2i( - 1, -1)
 		self.last_seen = -1
 
 class Knowledge:
@@ -56,17 +56,18 @@ class Castle:
 	func claim(by: Unit) -> CastleClaimResult:
 		if owner_team == -1:
 			if by.team == 0:
-				claim_progress = clamp(claim_progress + 0.5, 0, 1)
+				claim_progress = clamp(claim_progress + 0.5, -1, 1)
 			else:
-				claim_progress = clamp(claim_progress - 0.5, 0, 1)
-			if abs(claim_progress) == 1:
+				claim_progress = clamp(claim_progress - 0.5, -1, 1)
+			if abs(claim_progress) >= 1:
 				claim_progress = 1
 				owner_team = by.team
 				return CastleClaimResult.CONQUERED
 		elif owner_team != by.team:
 			claim_progress = clamp(claim_progress - 0.5, 0, 1)
-			if claim_progress == 0:
+			if claim_progress <= 0:
 				owner_team = -1
+				claim_progress = 0
 				return CastleClaimResult.NEUTRALIZED
 		return CastleClaimResult.IN_PROGRESS
 	
@@ -77,7 +78,6 @@ class Castle:
 			"name": name,
 			"supplies": supplies
 		}
-			
 
 enum CastleClaimResult {
 	CONQUERED,
@@ -110,7 +110,7 @@ const plains_visibility_multiplier: float = 0.9
 const water_visibility_multiplier: float = 0.95
 const forest_visibility_multiplier: float = 0.3
 const mountain_visibility_multiplier: float = 0.05
-const max_altitude_difference_for_visibility: float = 2 
+const max_altitude_difference_for_visibility: float = 2
 const altitude_decrease_visibility_multiplier_curve: float = 0.4
 const altitude_increase_visibility_multiplier_curve: float = 0.2
 const altitude_difference_multiplier_range := Vector2(0, 1.2)
@@ -138,7 +138,7 @@ const castle_vigilance_range: float = 5
 @onready var castle_properties_parent: Node3D = $CastleProperties
 @onready var time_between_turns: Timer = $TimeBetweenTurns
 
-@onready var camera:Camera3D = $Camera3D
+@onready var camera: Camera3D = $Camera3D
 @onready var hex_math = $HexMath
 @onready var terrain_renderer = $TerrainRenderer
 @onready var underground_renderer = $UndergroundRenderer
@@ -164,8 +164,8 @@ func _ready():
 
 	for team in range(len(teams_unit_counts)):
 		teams_knowledge.append(\
-			Knowledge.new(game_map.map_generator.width,\
-				game_map.map_generator.height,\
+			Knowledge.new(game_map.map_generator.width, \
+				game_map.map_generator.height, \
 				units_array.filter(func(u): return u.team != team)))
 
 	for i in range(len(game_map.castles_array)):
@@ -179,8 +179,8 @@ func _ready():
 	for u in units_array:
 		_update_knowledge(u)
 
-	_update_units(0)
-	_render_all_shadows(0)
+	_update_units(player_team())
+	_render_all_shadows(player_team())
 
 	_game_loop()
 	var mid_map = game_map.get_game_pos(game_map.get_size() / 2)
@@ -196,9 +196,9 @@ func _run_full_render():
 
 func _render_all_shadows(team: int):
 	var visibility_function: Callable
-	if team == -1:
+	if team == - 1:
 		visibility_function = func(pos: Vector2i): \
-			return max(teams_knowledge[0].get_visibility_at(pos),\
+			return max(teams_knowledge[0].get_visibility_at(pos), \
 				teams_knowledge[1].get_visibility_at(pos))
 	else:
 		visibility_function = teams_knowledge[team].get_visibility_at
@@ -222,7 +222,7 @@ func _render_all_shadows(team: int):
 func player_team() -> int:
 	var player = units_array.filter(func(u): return u.agent is UserAgent)
 	if len(player) == 0:
-		return -1
+		return - 1
 	return player[0].team
 
 func _game_loop():
@@ -255,7 +255,7 @@ func _game_loop():
 							unit.take_castle()
 							Logger.log_take_castle(unit, this_castle)
 						elif result == CastleClaimResult.NEUTRALIZED:
-							unit.neutralized_castle()	
+							unit.neutralized_castle()
 						
 						if this_castle.owner_team == unit.team:
 							this_castle.supplies -= unit.pickup_supplies(this_castle.supplies)
@@ -301,7 +301,7 @@ func get_cells_in_range(from: Vector2i, max_range: float):
 			cells_in_range.append(new_pos)
 			queue.append([new_pos, current[1] - 1])
 
-	return cells_in_range	
+	return cells_in_range
 
 func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, cells_in_between: Array, this_height: float, team: int):
 	if from == c:
@@ -394,30 +394,43 @@ func _update_units_knowledge():
 			elif randf() <= chance:
 				unit_knowledge.position = pos
 				unit_knowledge.last_seen = 0
-			elif unit_knowledge.last_seen != -1:
+			elif unit_knowledge.last_seen != - 1:
 				unit_knowledge.last_seen += 1
-		elif unit_knowledge.last_seen != -1:
+		elif unit_knowledge.last_seen != - 1:
 			unit_knowledge.last_seen += 1
 				
 func _perform_move(unit: Unit, move: Agent.AgentMove):
-	var enemy_positions = units_array.filter(func(u): return u.team != unit.team)\
+	var enemy_positions = units_array.filter(func(u): return u.team != unit.team) \
 							.reduce(func(accum, u):
-								accum[u.current_position] = u
+								accum[u.current_position]=u
 								return accum, {})
+	var unit_positions = units_array.filter(func(u): return u != unit).map(func(u): return u.current_position)
 
 	for entry_move in move.entry_path:
 		if entry_move in enemy_positions:
-				# unexpected attack
-				_perform_battle(unit, enemy_positions[entry_move], -1)
-				return
+			# unexpected attack
+			_perform_battle(unit, enemy_positions[entry_move], -1)
+			return
+		if entry_move in unit_positions:
+			assert(false, "Tried moving into ally unit spot")
 		unit.current_position = entry_move
 
 	if move.attacking_pos != null:
+		if not move.attacking_pos in enemy_positions:
+			assert(false, "Tried attacking a spot with no enemy")
 		_perform_battle(unit, enemy_positions[move.attacking_pos], 0)
 
 func _perform_battle(unit_a: Unit, unit_b: Unit, advantage_unit: int):
-	var unit_a_terrain = game_map.get_terrain_at(unit_a.current_position)
-	var unit_b_terrain = game_map.get_terrain_at(unit_b.current_position)
+	var unit_a_terrain: GameMap.TerrainType = game_map.get_terrain_at(unit_a.current_position)
+	if unit_a_terrain == GameMap.TerrainType.CASTLE and castles\
+		.filter(func(c): return c.position == unit_a.current_position)[0].owner_team != unit_a.team:
+		unit_a_terrain = GameMap.TerrainType.PLAIN
+
+	var unit_b_terrain: GameMap.TerrainType = game_map.get_terrain_at(unit_b.current_position)
+	if unit_b_terrain == GameMap.TerrainType.CASTLE and castles\
+		.filter(func(c): return c.position == unit_b.current_position)[0].owner_team != unit_a.team:
+		unit_b_terrain = GameMap.TerrainType.PLAIN
+
 	var unit_a_height = game_map.get_height_at(unit_a.current_position)
 	var unit_b_height = game_map.get_height_at(unit_b.current_position)
 
@@ -450,11 +463,11 @@ func destroy_unit(unit: Unit):
 	unit.queue_free()
 
 func _is_game_over() -> GameOverResult:
-	if len(units_array.filter(func(u): return u.team == 0)) == 0:
+	if units_array.all(func(u): return u.team != 0):
 		return GameOverResult.ATTACKERS_WON_BY_ELIMINATION
-	elif len(units_array.filter(func(u): return u.team == 1)) == 0:
+	elif units_array.all(func(u): return u.team != 1):
 		return GameOverResult.DEFENDERS_WON_BY_ELIMINATION
-	elif len(castles.filter(func(c): return c.owner_team == 0)) == 0:
+	elif castles.all(func(c): return c.owner_team == 1):
 		return GameOverResult.ATTACKERS_WON_BY_CONQUEST
 	else:
 		return GameOverResult.NOT_OVER
@@ -536,10 +549,11 @@ func _update_units(p_team: int):
 		destroy_unit(u)
 
 	for unit in units_array:
-		if p_team != -1 and unit.team != p_team:
+		if p_team != - 1 and unit.team != p_team:
 			unit.visible = teams_knowledge[p_team].enemy_positions[unit].last_seen == 0
 			if not unit.visible:
 				continue
+		unit.visible = true
 
 		var matrix_pos = unit.current_position
 
@@ -594,9 +608,9 @@ func get_moves(unit: Unit, from: Vector2i) -> Array:
 		speed = mountain_speed_penalty
 
 	# visited is point: [[path to point], speed]
-	var visited: Dictionary = {from: [[from], speed]}
+	var visited: Dictionary = {from: [[from],speed]}
 	# queue is [[[path_to_current], (Vector3)current_data]]
-	var queue = [[[from], Vector3(from.x, from.y, speed)]]
+	var queue = [[[from],Vector3(from.x, from.y, speed)]]
 
 	while len(queue) > 0:
 		var element = queue.pop_front()
@@ -648,8 +662,7 @@ func get_moves(unit: Unit, from: Vector2i) -> Array:
 
 			var unit_at = get_unit_at(unit, new_pos)
 			if unit_at[0] and unit_at[1] != null and unit_at[1] != unit:
-				if unit_at[1].team != unit.team:
-					visited[new_pos] = [new_path, remaining]
+				visited[new_pos] = [new_path, remaining]
 				continue
 			
 			visited[new_pos] = [new_path, new_remaining]

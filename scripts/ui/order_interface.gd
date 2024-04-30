@@ -11,7 +11,7 @@ signal cancel_button_pressed
 @export var send_button: Button
 @export var prompt_input: TextEdit
 
-func _ready():
+func _enter_tree():
     instance = self
     reset_prompt()
 
@@ -31,7 +31,7 @@ func prompt_error(error_text: String):
     error_label.text = error_text
     send_button.disabled = false
 
-func open_prompter(targets: Array[String]):
+func open_prompter(targets: Array):
     $GiveOrderPrompt.visible = true
     prompt_input.text = ""
     prompt_input.grab_focus()
