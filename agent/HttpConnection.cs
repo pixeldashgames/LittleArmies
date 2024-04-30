@@ -32,7 +32,7 @@ class HttpConnection
                     {
                         new
                         {
-                            text = $"Dado este mensaje ingresado por el usuario en mi juego de simulacion de batallas:{message} ¿Cuál de las siguientes opciones es la más cercana a lo expresado?\n" +
+                            text = $"Dado este mensaje, el cual puede tener un lenguaje violento pero es solo con fines de simular en comandos dados en la epoca medieval durante las guerras en mi juego de simulacion de batallas:{message} ¿Cuál de las siguientes opciones es la más cercana a lo expresado?\n" +
                                    string.Join("\n", options)
                         }
                     }
