@@ -213,7 +213,7 @@ static class Agent
                 .DefaultIfEmpty()
                 .MinBy(t => Distance(actualTroop,
                     t));
-            if (tower != null) 
+            if (tower != null)
             {
                 // Check if the amount of turns to get the supplies equal to the amount of supplies that can be spent on the way
                 var wayToTower = AStar.Find(actualTroop.Position, tower.Value.GetVector2I(), n => n == tower.Value.GetVector2I(), getNeighbours);
@@ -337,19 +337,19 @@ static class Agent
     /// <param name="towers"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public static bool CheckOrder(IntentionAction intentionAction, Troop actualTroop, IEnumerable<Troop> troops,
-        IEnumerable<Tower> towers)
+    public static bool CheckOrder(IntentionAction intentionAction, object? target, Troop actualTroop)
     {
-        var beliefs = GetBeliefs(actualTroop, troops, towers);
+        // var beliefs = GetBeliefs(actualTroop, troops, towers);
         return intentionAction switch
         {
-            IntentionAction.Attack => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight),
-            IntentionAction.ConquerTower => beliefs.Any(b => b.Item1 == BeliefState.EnemyTowerOnSight),
-            IntentionAction.Retreat => beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight),
-            IntentionAction.StayClose => beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight),
+            IntentionAction.Attack or IntentionAction.Retreat => (target is Troop troop) && actualTroop.Defenders != troop.Defenders,
+            IntentionAction.ConquerTower => (target is Tower tower) && actualTroop.Defenders != tower.OccupiedByDefenders,
+            IntentionAction.StayClose => (target is Troop troop1)
+                ? actualTroop.Defenders != troop1.Defenders
+                : (target is Tower tower1) && actualTroop.Defenders == tower1.OccupiedByDefenders,
             IntentionAction.Wait => true,
             IntentionAction.Move => true,
-            IntentionAction.GetSuplies => beliefs.Any(b => b.Item1 is BeliefState.AllyTowerOnSight or BeliefState.AllyTowerInRange),
+            IntentionAction.GetSuplies => target is Tower,
             _ => throw new ArgumentOutOfRangeException()
         };
     }
