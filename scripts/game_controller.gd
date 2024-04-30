@@ -117,6 +117,8 @@ const altitude_difference_multiplier_range := Vector2(0, 1.2)
 
 const castle_vigilance_range: float = 5
 
+signal game_over(result: GameOverResult)
+
 @export var morale_starting_values: Array[float]
 @export var count_starting_values: Array[int]
 @export var supplies_starting_values: Array[int]
@@ -145,6 +147,10 @@ const castle_vigilance_range: float = 5
 @onready var water_renderer = $WaterRenderer
 @onready var forests_renderer = $ForestsRenderer
 @onready var mountains_renderer = $MountainsRenderer
+
+var defenders_battles_won = 0
+var attackers_battles_won = 0
+var total_duration = 0
 
 var units_array: Array[Unit] = []
 
@@ -274,11 +280,12 @@ func _game_loop():
 
 			if not time_between_turns.is_stopped():
 				await time_between_turns.timeout
+		total_duration += 1
 	
 	finish_game()
 
 func finish_game():
-	print("game over by" + str(_is_game_over()))
+	game_over.emit(_is_game_over())
 
 func get_cells_in_range(from: Vector2i, max_range: float):
 	var cells_in_range = [from]
@@ -422,6 +429,12 @@ func _perform_move(unit: Unit, move: Agent.AgentMove):
 			assert(false, "Tried attacking a spot with no enemy")
 		_perform_battle(unit, enemy_positions[move.attacking_pos], 0)
 
+func _add_win(team: int):
+	if team == 0:
+		defenders_battles_won += 1
+	else:
+		attackers_battles_won += 1
+
 func _perform_battle(unit_a: Unit, unit_b: Unit, advantage_unit: int):
 	var unit_a_terrain: GameMap.TerrainType = game_map.get_terrain_at(unit_a.current_position)
 	if unit_a_terrain == GameMap.TerrainType.CASTLE and castles\
@@ -443,6 +456,20 @@ func _perform_battle(unit_a: Unit, unit_b: Unit, advantage_unit: int):
 	var a_injured = unit_a.injure_units(ceili(unit_b_damage[1]))
 	var b_deaths = unit_b.kill_units(ceili(unit_a_damage[0]))
 	var b_injured = unit_b.injure_units(ceili(unit_a_damage[1]))
+
+	# determine damage for stats
+
+	if unit_a.is_dead() and not unit_b.is_dead():
+		_add_win(unit_b.team)
+	elif unit_b.is_dead() and not unit_a.is_dead():
+		_add_win(unit_a.team)
+	elif not unit_b.is_dead() and not unit_a.is_dead():
+		var a_damage = b_deaths + 0.5 * b_injured
+		var b_damage = a_deaths + 0.5 * a_injured
+		if a_damage > b_damage:
+			_add_win(unit_a.team)
+		elif b_damage > a_damage:
+			_add_win(unit_b.team)
 
 	unit_b.damage_dealt_to_enemy(a_deaths, a_injured)
 	unit_a.damage_dealt_to_enemy(b_deaths, b_injured)
@@ -606,8 +633,9 @@ func get_moves(unit: Unit, from: Vector2i) -> Array:
 	
 	speed -= initial_penalty
 
-	if speed < mountain_speed_penalty:
-		speed = mountain_speed_penalty
+	# if it is any less than this you could get stuck
+	if speed < mountain_speed_penalty * 1.2 + 0.001:
+		speed = mountain_speed_penalty * 1.2 + 0.001
 
 	# visited is point: [[path to point], speed]
 	var visited: Dictionary = {from: [[from],speed]}

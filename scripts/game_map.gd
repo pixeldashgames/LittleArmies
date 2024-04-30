@@ -41,8 +41,8 @@ enum TerrainType {
 @export var castle_scene: PackedScene
 @export var mountain_scene: PackedScene
 
-@export var extra_width: int = 20
-@export var extra_height: int = 30
+@export var extra_width: int = 0
+@export var extra_height: int = 0
 
 @onready var map_generator = $PerlinMapGenerator
 @onready var map_parent = $MapParent
@@ -90,7 +90,6 @@ func get_terrain_at(pos: Vector2i) -> TerrainType:
 		return TerrainType.CASTLE
 	else:
 		return TerrainType.PLAIN
-
 
 func get_size() -> Vector2i: return Vector2i(map_generator.width, map_generator.height)
 
@@ -226,6 +225,16 @@ func _generate_noise_map():
 			noise_map[i][j] = randf_range( - 1, 1)
 	return noise_map
 
+func is_accessible(pos: Vector2i) -> bool:
+	var cell_height = get_height_at(pos)
+	var directions = get_map_directions(pos)
+
+	return directions.all(func(dir):
+		var new_pos = pos + dir
+		if not is_valid_pos(new_pos):
+			return false
+		return abs(get_height_at(new_pos) - cell_height) < 0.5)		
+
 func _generate_castle(castle_positions, threshold):
 	for pos in castle_positions:
 		var i = int(pos.y)
@@ -234,7 +243,8 @@ func _generate_castle(castle_positions, threshold):
 		var castle_likelyhood = pos.z
 
 		if castle_likelyhood < threshold \
-			or has_water_in(pos2d) or has_castle_in(pos2d):
+			or has_water_in(pos2d) or has_castle_in(pos2d) \
+			or not is_accessible(pos2d):
 			continue
 		
 		var x_pos = j * 2 + posmod(i, 2)

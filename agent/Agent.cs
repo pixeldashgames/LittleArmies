@@ -240,7 +240,7 @@ static class Agent
 
         // if there is an ally tower on sight, stay close to it
         if (beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight) && actualTroop.Defenders)
-            return (IntentionAction.Wait, beliefs.First(b => b.Item1 == BeliefState.AllyTowerOnSight).Item2);
+            return (IntentionAction.StayClose, beliefs.First(b => b.Item1 == BeliefState.AllyTowerOnSight).Item2);
 
         // if there is an ally on sight, stay close to it
         if (beliefs.Any(b => b.Item1 == BeliefState.AlliesOnSight) && !actualTroop.Defenders)

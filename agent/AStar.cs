@@ -62,7 +62,9 @@ public static class AStar
 
         var queue = new PriorityQueue<NodePath, float>();
         queue.Enqueue(new NodePath(start, [start], 0), 0);
-        
+
+        (NodePath path, float weight) closestPointFound = (queue.Peek(), float.MaxValue);
+
         while (queue.Count > 0)
         {
             var current = queue.Dequeue();
@@ -85,10 +87,15 @@ public static class AStar
 
                 visited.Add(visitedNode);
 
-                queue.Enqueue(current.Append(neighbour), weight);
+                var neighPath = current.Append(neighbour);
+
+                if (weight < closestPointFound.weight)
+                    closestPointFound = (neighPath, weight);
+
+                queue.Enqueue(neighPath, weight);
             }
         }
 
-        throw new ArgumentException("Path not found from " + start + " to " + end);
+        return closestPointFound.path.Path;
     }
 }

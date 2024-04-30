@@ -38,8 +38,6 @@ castle_properties_scene = ExtResource("6_wqs25")
 
 [node name="GameMap" parent="." instance=ExtResource("1_85pqf")]
 map_size = Vector2i(32, 32)
-extra_width = 0
-extra_height = 0
 
 [node name="Units" type="Node3D" parent="."]
 
@@ -50,7 +48,7 @@ extra_height = 0
 [node name="CastleProperties" type="Node3D" parent="."]
 
 [node name="TimeBetweenTurns" type="Timer" parent="."]
-wait_time = 0.25
+wait_time = 0.001
 one_shot = true
 
 [node name="Camera3D" type="Camera3D" parent="."]

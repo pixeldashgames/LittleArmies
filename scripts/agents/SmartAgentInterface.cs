@@ -32,7 +32,8 @@ public partial class SmartAgentInterface : Node
 
         (IntentionAction, object?) action;
 
-        if (orderedAction.HasValue){
+        if (orderedAction.HasValue)
+        {
             if (orderedAction.Value.Item2 is Troop troop)
             {
                 var troopsWithName = troops.Select(t => t.Name == troop.Name).ToArray();
@@ -111,8 +112,14 @@ public partial class SmartAgentInterface : Node
             var enemy = ((Troop)action.Item2!).Position;
             var attackAStarResult = AStar.Find(myPos, enemy, p => p == enemy, getNeighboursFunc).ToArray();
 
-            if (attackAStarResult.Length == 0)
+            if (attackAStarResult.Length == 1)
                 throw new ArgumentException($"Enemy {(Troop)action.Item2!} on agent {myTroop} spot?");
+
+            if (!troops.Any(t => t.Position == enemy && t.Defenders != myTroop.Defenders))
+            {
+                GD.PrintErr($"Enemy {(Troop)action.Item2!} not found on troops list");
+                throw new ArgumentException($"Enemy {(Troop)action.Item2!} not found on troops list");
+            }
 
             var attackPos = attackAStarResult.Length == 1 ? attackAStarResult[0] : attackAStarResult[1];
 
@@ -140,8 +147,10 @@ public partial class SmartAgentInterface : Node
         switch (action.Item1)
         {
             case IntentionAction.Wait:
+                GD.Print("Wait");
                 return [new Array<Vector2I> { myPos }, myPos, false];
             case IntentionAction.Move:
+                GD.Print("Move");
                 var movePos = mapMid;
                 var aStarResult = AStar.Find(myPos, movePos, p => (p - movePos).Length() <= 6, getNeighboursFunc).ToArray();
 
@@ -156,6 +165,7 @@ public partial class SmartAgentInterface : Node
 
                 return retS;
             case IntentionAction.ConquerTower:
+                GD.Print("Conquer tower");
                 var towerTarget = ((Tower)action.Item2!).Position;
                 var towerAStarResult = AStar.Find(myPos, towerTarget, p => p == towerTarget, getNeighboursFunc).ToArray();
 
@@ -164,10 +174,11 @@ public partial class SmartAgentInterface : Node
                 if (isTroopAt(stepPos))
                     stepPos = pickRandomElement(getValidAdjacents(stepPos));
 
-                var path = neighbourPaths.First(n => n.neigh == stepPos).path;                
+                var path = neighbourPaths.First(n => n.neigh == stepPos).path;
 
                 return [path, stepPos, false];
             case IntentionAction.GetSuplies:
+                GD.Print("Get supplies");
                 var suppliesTarget = ((Tower)action.Item2!).Position;
                 var suppliesAStarResult = AStar.Find(myPos, suppliesTarget, p => p == suppliesTarget, getNeighboursFunc).ToArray();
 
@@ -180,9 +191,18 @@ public partial class SmartAgentInterface : Node
 
                 return [suppliesPath, suppliesStepPos, false];
             case IntentionAction.Attack:
+                GD.Print("Attack");
                 return getAttackResult();
             case IntentionAction.StayClose:
-                var ally = ((Troop)action.Item2!).Position;
+                GD.Print("Stay close");
+                Vector2I ally;
+                if (action.Item2 is Troop troop)
+                    ally = troop.Position;
+                else if (action.Item2 is Tower tower)
+                    ally = tower.Position;
+                else
+                    throw new ArgumentException("Invalid stay close argument");
+
                 var stayCloseAStarResult = AStar.Find(myPos, ally, p => (p - ally).Length() <= 4, getNeighboursFunc).ToArray();
                 var stayClosePos = stayCloseAStarResult.Length == 1 ? stayCloseAStarResult[0] : stayCloseAStarResult[1];
 
@@ -193,6 +213,7 @@ public partial class SmartAgentInterface : Node
 
                 return [stayClosePath, stayClosePos, false];
             case IntentionAction.Retreat:
+                GD.Print("Retreat");
                 var closestAllies = troops
                     .Where(t => t.Defenders == myTroop.Defenders)
                     .Select(t => t.Position)
@@ -291,7 +312,7 @@ public partial class SmartAgentInterface : Node
         else
             desire = DesireState.GoAhead;
 
-        var troop = new Troop( 
+        var troop = new Troop(
             (pos.X, pos.Y),
             (int)dict["count"],
             desire,
