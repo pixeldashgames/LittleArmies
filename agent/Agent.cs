@@ -166,6 +166,40 @@ static class Agent
     {
         List<(IntentionAction, object?)> actions = [];
 
+        // Select the action to take for each enemy on sight
+        foreach (var enemy in beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight)
+                     .Select(b => b.Item2 as Troop?))
+        {
+            if (enemy == null) continue;
+
+            var action = (actualTroop.Troops + (float)(actualTroop.Troops) * (int)actualTroop.Terrain / 100f) /
+                         (enemy.Value.Troops + enemy.Value.Troops *
+                             ((int)actualTroop.Terrain / 100f));
+            if (action > AttackProbability)
+                actions.Add((IntentionAction.Attack, enemy));
+            else
+            {
+                if (beliefs.Contains((BeliefState.EnemyInRange, enemy)))
+                    actions.Add((IntentionAction.Retreat, enemy));
+            }
+        }
+        // if the troop desire is to go ahead, conquer the tower if there is no enemy on sight else attack the closest enemy
+        if (actualTroop.Desire == DesireState.GoAhead)
+            if (actions.Count == 0)
+                if (beliefs.Any(b => b.Item1 == BeliefState.EnemyTowerOnSight))
+                    return (IntentionAction.ConquerTower, beliefs.Where(b => b.Item1 == BeliefState.EnemyTowerOnSight).MinBy(b => Distance(actualTroop, b.Item2 as Tower?)).Item2);
+                else
+                    return (IntentionAction.Move, null);
+            else
+                return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
+
+
+        // if there is an enemy in range, attack the closest one
+        if (actualTroop.Desire == DesireState.StayCalm && beliefs.Any(b => b.Item1 == BeliefState.EnemyInRange) && actions.Count > 0)
+            return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
+
+
+
         // Select each enemy tower on sight
         var towers = beliefs.Where(b => b.Item1 is BeliefState.EnemyTowerOnSight)
             .Select(b => b.Item2 as Tower?).ToList();
@@ -185,23 +219,7 @@ static class Agent
         if (towerCanGo != null)
             return (IntentionAction.ConquerTower, towerCanGo);
 
-        // Select the action to take for each enemy on sight
-        foreach (var enemy in beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight)
-                     .Select(b => b.Item2 as Troop?))
-        {
-            if (enemy == null) continue;
 
-            var action = (actualTroop.Troops + (float)(actualTroop.Troops) * (int)actualTroop.Terrain / 100f) /
-                         (enemy.Value.Troops + enemy.Value.Troops *
-                             ((int)actualTroop.Terrain / 100f));
-            if (action > AttackProbability)
-                actions.Add((IntentionAction.Attack, enemy));
-            else
-            {
-                if (beliefs.Contains((BeliefState.EnemyInRange, enemy)))
-                    actions.Add((IntentionAction.Retreat, enemy));
-            }
-        }
 
         if (beliefs.Any(b => b.Item1 == BeliefState.EnemyInRange))
         { }
@@ -232,11 +250,9 @@ static class Agent
             else
                 return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
 
-        // When the desire is to stay close
 
-        // if there is an enemy in range, attack the closest one
-        if (beliefs.Any(b => b.Item1 == BeliefState.EnemyInRange) && actions.Count > 0)
-            return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
+
+        // When the desire is to stay close
 
         // if there is an ally tower on sight, stay close to it
         if (beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight) && actualTroop.Defenders)
