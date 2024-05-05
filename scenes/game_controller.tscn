@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://bwro3su7uu5nc"]
+[gd_scene load_steps=23 format=3 uid="uid://bwro3su7uu5nc"]
 
 [ext_resource type="PackedScene" uid="uid://cmb1sw3nnmtwu" path="res://scenes/game_map.tscn" id="1_85pqf"]
 [ext_resource type="Script" path="res://scripts/game_controller.gd" id="1_ceaui"]
@@ -21,6 +21,7 @@
 [ext_resource type="PackedScene" uid="uid://8adtmwsm68t2" path="res://scenes/renderers/shadowed_mountains_renderer.tscn" id="15_unf6s"]
 [ext_resource type="PackedScene" uid="uid://cmnpsjls51ua5" path="res://scenes/renderers/shadowed_forests_renderer.tscn" id="17_gar75"]
 [ext_resource type="Script" path="res://scripts/utils/HexCellsBetween.cs" id="20_webjb"]
+[ext_resource type="Script" path="res://scripts/VisibilityMap.cs" id="22_npf05"]
 
 [node name="GameController" type="Node3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0419369, -0.044529, -0.0145645)
@@ -60,28 +61,36 @@ camera_damping = 0.2
 
 [node name="TerrainRenderer" type="Node3D" parent="."]
 script = ExtResource("7_vnf7q")
+chunk_size = 4
 multi_mesh_scene = ExtResource("8_dljjw")
 mutli_mesh_shadowed_scene = ExtResource("9_i2mos")
 
 [node name="UndergroundRenderer" type="Node3D" parent="."]
 script = ExtResource("7_vnf7q")
+chunk_size = 4
 multi_mesh_scene = ExtResource("9_ivv3j")
 mutli_mesh_shadowed_scene = ExtResource("11_kgcs2")
 
 [node name="WaterRenderer" type="Node3D" parent="."]
 script = ExtResource("7_vnf7q")
+chunk_size = 4
 multi_mesh_scene = ExtResource("10_hs8xf")
 mutli_mesh_shadowed_scene = ExtResource("10_hs8xf")
 
 [node name="MountainsRenderer" type="Node3D" parent="."]
 script = ExtResource("7_vnf7q")
+chunk_size = 4
 multi_mesh_scene = ExtResource("11_5ftrv")
 mutli_mesh_shadowed_scene = ExtResource("15_unf6s")
 
 [node name="ForestsRenderer" type="Node3D" parent="."]
 script = ExtResource("7_vnf7q")
+chunk_size = 4
 multi_mesh_scene = ExtResource("12_0asyr")
 mutli_mesh_shadowed_scene = ExtResource("17_gar75")
 
 [node name="HexMath" type="Node" parent="."]
 script = ExtResource("20_webjb")
+
+[node name="VisibilityMap" type="Node" parent="."]
+script = ExtResource("22_npf05")
