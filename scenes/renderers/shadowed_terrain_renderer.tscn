@@ -1,7 +1,0 @@
-[gd_scene load_steps=3 format=3 uid="uid://br8akmpxihgtc"]
-
-[ext_resource type="PackedScene" uid="uid://bjgrj5i2hexab" path="res://scenes/renderers/terrain_renderer.tscn" id="1_7blka"]
-[ext_resource type="Material" uid="uid://cvmp07vvw80ay" path="res://materials/shadowed_material_overlay.tres" id="2_5pgq7"]
-
-[node name="ShadowedTerrainRenderer" instance=ExtResource("1_7blka")]
-material_overlay = ExtResource("2_5pgq7")

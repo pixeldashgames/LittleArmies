@@ -1,22 +1,13 @@
 extends CellRenderer
 
-@export var normal_water_color: Color
-@export var fully_shadowed_water_color: Color
-
-func render(game_map: GameMap, from: Vector2i, to: Vector2i, cascade: int, total_cascades: int):
+func render(game_map: GameMap, from: Vector2i, to: Vector2i):
 	var water_array = game_map.water_array
 
 	var new_multimesh = MultiMesh.new()
 	new_multimesh.transform_format = MultiMesh.TRANSFORM_3D
-	new_multimesh.use_colors = true
+	new_multimesh.use_custom_data = true
 	new_multimesh.mesh = multimesh.mesh
 	multimesh = new_multimesh
-
-	# create a new material off the overlay and change the albedo alpha
-	var material = material_override
-	material = material.duplicate()
-	material.albedo_color = normal_water_color.lerp(fully_shadowed_water_color, 1 - float(cascade) / total_cascades)
-	material_override = material
 
 	var transforms = []
 
@@ -35,3 +26,4 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i, cascade: int, total
 	multimesh.instance_count = count
 	for i in range(count):
 		multimesh.set_instance_transform(i, transforms[i])
+		#multimesh.set_instance_custom_data(i, Color(0, 0, 0, 0))

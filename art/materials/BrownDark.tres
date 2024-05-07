@@ -1,0 +1,10 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://bofobugdlfy0m"]
+
+[ext_resource type="Shader" path="res://art/shaders/shader_with_visibility.gdshader" id="1_o42oj"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_o42oj")
+shader_parameter/albedo = Color(0.32549, 0.101961, 0.0588235, 1)
+shader_parameter/max_tint_color = Color(0, 0, 0, 0.866667)
+shader_parameter/metallic = 0.5

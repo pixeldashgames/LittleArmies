@@ -1,12 +1,12 @@
 [gd_scene load_steps=4 format=3 uid="uid://dymd474460hms"]
 
-[ext_resource type="ArrayMesh" uid="uid://dqccmyqfqqth1" path="res://art/terrain/hex_rock_detail.obj" id="1_lj8ce"]
+[ext_resource type="ArrayMesh" uid="uid://dwokml17llvbo" path="res://art/modified meshes/hex_rock.res" id="1_75u63"]
 [ext_resource type="Script" path="res://scripts/renderers/underground_renderer.gd" id="2_jhtkx"]
 
 [sub_resource type="MultiMesh" id="MultiMesh_u7iys"]
 transform_format = 1
-use_colors = true
-mesh = ExtResource("1_lj8ce")
+use_custom_data = true
+mesh = ExtResource("1_75u63")
 
 [node name="UndergroundRenderer" type="MultiMeshInstance3D"]
 multimesh = SubResource("MultiMesh_u7iys")

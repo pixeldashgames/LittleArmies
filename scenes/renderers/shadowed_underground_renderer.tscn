@@ -1,7 +1,0 @@
-[gd_scene load_steps=3 format=3 uid="uid://d3g1whud6lm7y"]
-
-[ext_resource type="PackedScene" uid="uid://dymd474460hms" path="res://scenes/renderers/underground_renderer.tscn" id="1_unv80"]
-[ext_resource type="Material" uid="uid://cvmp07vvw80ay" path="res://materials/shadowed_material_overlay.tres" id="2_8fuc1"]
-
-[node name="ShadowedUndergroundRenderer" instance=ExtResource("1_unv80")]
-material_overlay = ExtResource("2_8fuc1")

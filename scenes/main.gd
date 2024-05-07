@@ -1,4 +1,4 @@
 extends Node
 
 func _ready():
-    $GameController.start_game()
+	$GameController.start_game()
