@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://bwro3su7uu5nc"]
+[gd_scene load_steps=20 format=3 uid="uid://bwro3su7uu5nc"]
 
 [ext_resource type="PackedScene" uid="uid://cmb1sw3nnmtwu" path="res://scenes/game_map.tscn" id="1_85pqf"]
 [ext_resource type="Script" path="res://scripts/game_controller.gd" id="1_ceaui"]
@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" uid="uid://va5d7fiocsqv" path="res://scenes/renderers/water_renderer.tscn" id="10_hs8xf"]
 [ext_resource type="PackedScene" uid="uid://dq8eku3fdcfse" path="res://scenes/renderers/mountains_renderer.tscn" id="11_5ftrv"]
 [ext_resource type="PackedScene" uid="uid://diaqvkpp57p3r" path="res://scenes/renderers/forests_renderer.tscn" id="12_0asyr"]
+[ext_resource type="PackedScene" uid="uid://dotxrymt3aeuq" path="res://scenes/renderers/castles_renderer.tscn" id="13_g72g4"]
 [ext_resource type="Script" path="res://scripts/utils/HexCellsBetween.cs" id="20_webjb"]
 [ext_resource type="Script" path="res://scripts/VisibilityMap.cs" id="22_npf05"]
 
@@ -57,27 +58,26 @@ camera_damping = 0.2
 
 [node name="TerrainRenderer" type="Node3D" parent="."]
 script = ExtResource("7_vnf7q")
-chunk_size = 4
 multi_mesh_scene = ExtResource("8_dljjw")
+
+[node name="CastlesRenderer" type="Node3D" parent="."]
+script = ExtResource("7_vnf7q")
+multi_mesh_scene = ExtResource("13_g72g4")
 
 [node name="UndergroundRenderer" type="Node3D" parent="."]
 script = ExtResource("7_vnf7q")
-chunk_size = 4
 multi_mesh_scene = ExtResource("9_ivv3j")
 
 [node name="WaterRenderer" type="Node3D" parent="."]
 script = ExtResource("7_vnf7q")
-chunk_size = 4
 multi_mesh_scene = ExtResource("10_hs8xf")
 
 [node name="MountainsRenderer" type="Node3D" parent="."]
 script = ExtResource("7_vnf7q")
-chunk_size = 4
 multi_mesh_scene = ExtResource("11_5ftrv")
 
 [node name="ForestsRenderer" type="Node3D" parent="."]
 script = ExtResource("7_vnf7q")
-chunk_size = 4
 multi_mesh_scene = ExtResource("12_0asyr")
 
 [node name="HexMath" type="Node" parent="."]

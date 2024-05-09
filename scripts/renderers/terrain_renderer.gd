@@ -7,9 +7,10 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i):
 	new_multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	new_multimesh.use_custom_data = true
 	new_multimesh.mesh = multimesh.mesh
-	print(multimesh.mesh)
 	multimesh = new_multimesh
 	var transforms = []
+
+	var cindex := 0
 
 	for i in range(from.y, to.y):
 		for j in range(from.x, to.x):
@@ -20,7 +21,8 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i):
 			var z_pos = i * sqrt(3)
 
 			transforms.append(Transform3D(Basis(), Vector3(x_pos, terrain_array[i][j][0], z_pos)))
-			instance_positions.append(Vector2i(j, i))
+			cell_indexes[Vector2i(j, i)] = [ cindex ]
+			cindex += 1
 	
 	var count = len(transforms)
 	multimesh.instance_count = count

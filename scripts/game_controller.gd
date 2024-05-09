@@ -149,6 +149,7 @@ signal game_over(result: GameOverResult)
 @onready var visibility_map = $VisibilityMap
 @onready var terrain_renderer = $TerrainRenderer
 @onready var underground_renderer = $UndergroundRenderer
+@onready var castles_renderer = $CastlesRenderer
 @onready var water_renderer = $WaterRenderer
 @onready var forests_renderer = $ForestsRenderer
 @onready var mountains_renderer = $MountainsRenderer
@@ -225,6 +226,7 @@ func _run_full_render():
 	water_renderer.render(game_map)
 	forests_renderer.render(game_map)
 	mountains_renderer.render(game_map)
+	castles_renderer.render(game_map)
 
 func _render_all_shadows(team: int):
 	if is_test:
@@ -258,6 +260,7 @@ func _render_all_shadows(team: int):
 	water_renderer.change_visibility(visibility_function)
 	forests_renderer.change_visibility(visibility_function)
 	mountains_renderer.change_visibility(visibility_function)
+	castles_renderer.change_visibility(visibility_function)
 
 func player_team() -> int:
 	var player = units_array.filter(func(u): return u.agent is UserAgent)
@@ -304,6 +307,7 @@ func _game_loop():
 
 			if not is_test:
 				time_between_turns.start()
+			
 			_update_units(player_team())
 			_update_castles()
 			_render_all_shadows(player_team())

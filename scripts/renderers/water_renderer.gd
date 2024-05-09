@@ -11,6 +11,8 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i):
 
 	var transforms = []
 
+	var cindex := 0
+
 	for i in range(from.y, to.y):
 		for j in range(from.x, to.x):
 			if not water_array[i][j]:
@@ -20,10 +22,11 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i):
 			var z_pos = i * sqrt(3)
 
 			transforms.append(Transform3D(Basis(), Vector3(x_pos, 0, z_pos)))
-			instance_positions.append(Vector2i(j, i))
+			cell_indexes[Vector2i(j, i)] = [ cindex ]
+			cindex += 1
 	
 	var count = len(transforms)
 	multimesh.instance_count = count
 	for i in range(count):
 		multimesh.set_instance_transform(i, transforms[i])
-		#multimesh.set_instance_custom_data(i, Color(0, 0, 0, 0))
+		multimesh.set_instance_custom_data(i, Color(0, 0, 0, 0))

@@ -11,6 +11,8 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i):
 
 	var transforms = []
 
+	var cindex := 0
+
 	for i in range(from.y, to.y):
 		for j in range(from.x, to.x):
 			if len(terrain_array[i][j]) <= 1:
@@ -19,9 +21,13 @@ func render(game_map: GameMap, from: Vector2i, to: Vector2i):
 			var x_pos = j * 2 + posmod(i, 2)
 			var z_pos = i * sqrt(3)
 
-			for k in range(1, len(terrain_array[i][j])):
+			var instances = len(terrain_array[i][j]) - 1
+
+			for k in range(1, instances + 1):
 				transforms.append(Transform3D(Basis(), Vector3(x_pos, terrain_array[i][j][k], z_pos)))
-				instance_positions.append(Vector2i(j, i))
+			
+			cell_indexes[Vector2i(j, i)] = range(cindex, cindex + instances)
+			cindex += instances
 	
 	var count = len(transforms)
 	multimesh.instance_count = count
