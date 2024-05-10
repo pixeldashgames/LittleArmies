@@ -31,6 +31,11 @@ func _ready():
 	order_instance.give_order_button_pressed.connect(on_give_order_button_pressed)
 	order_instance.cancel_button_pressed.connect(on_cancel_button_pressed)
 
+func _process(_delta):
+	if not controller:
+		return
+	controller.camera.can_move = not _giving_order
+
 func on_give_order_button_pressed():
 	_giving_order = true
 	order_instance.hide_button()
