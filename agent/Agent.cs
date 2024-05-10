@@ -163,7 +163,90 @@ static class Agent
         return beliefs;
     }
 
+    private static (IntentionAction, object?) GetIntentionDifuse(Troop actualTroop,
+        (BeliefState, object?)[] beliefs, Func<Vector2I, IEnumerable<Vector2I>> getNeighbours)
+    {
+        List<(IntentionAction, object?, float)> actions = [];
+        const float distanceFactor = 5f;
 
+        const float proGoAhead = 1.05f;
+        const float consGoAhead = .95f;
+        const float proStayCalm = 1.05f;
+        const float consStayCalm = .95f;
+
+        actions.Add((IntentionAction.Move, null, 0.1f));
+
+        const float enemyValue = 0.3f;
+        const float conquerTowerValue = 0.3f;
+        const float suppliesValue = 1f;
+        const float stayClose = 0.3f;
+
+
+
+        // Select the action to take for each enemy on sight
+        foreach (var enemy in beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight)
+                     .Select(b => b.Item2 as Troop?))
+        {
+            if (enemy == null) continue;
+            var probability = (enemyValue + ((actualTroop.Troops * (100 + (int)actualTroop.Terrain) / 100f) /
+                         (enemy.Value.Troops * (100 + (int)actualTroop.Terrain) / 100f)) + distanceFactor / Distance(actualTroop, enemy))
+                         * ((actualTroop.Desire == DesireState.GoAhead) ? proGoAhead : consGoAhead);
+            if (probability > AttackProbability)
+                actions.Add((IntentionAction.Attack, enemy, probability));
+            else
+            {
+                if (beliefs.Contains((BeliefState.EnemyInRange, enemy)) && beliefs.Where(b => b.Item1 is BeliefState.EnemyTowerOnSight)
+                    .Select(b => b.Item2 as Tower?)
+                    .Where(tower => beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight or BeliefState.AlliesOnSight)
+                    .Select(b => b.Item2 as Troop?).All(t => t?.Position != tower?.Position))
+                    .Any())
+                    actions.Add((IntentionAction.Move, beliefs.Where(b => b.Item1 == BeliefState.AllyTowerInRange).MinBy(t => Distance(actualTroop, t.Item2 as Tower?)), 2 * probability));
+                else
+                    actions.Add((IntentionAction.Retreat, enemy, probability));
+            }
+        }
+
+        // Select the action to take foreach Enemy Tower
+        foreach (var tower in beliefs.Where(b => b.Item1 is BeliefState.EnemyTowerOnSight)
+            .Select(b => b.Item2 as Tower?)
+            .Where(tower => beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight or BeliefState.AlliesOnSight)
+            .Select(b => b.Item2 as Troop?).All(t => t?.Position != tower?.Position))
+            .DefaultIfEmpty())
+        {
+            actions.Add((IntentionAction.ConquerTower, tower, conquerTowerValue * ((actualTroop.Desire == DesireState.GoAhead) ? proGoAhead : consGoAhead)
+            + distanceFactor / Distance(actualTroop, tower)));
+        }
+
+        // Go to get suppplies to the closest tower whitch havent troops inside
+        var selectedTower = beliefs.Where(b => b.Item1 is BeliefState.AllyTowerOnSight or BeliefState.EnemyTowerOnSight).Select(b => b.Item2 as Tower?)
+            .Where(tower => beliefs.Where(b => b.Item1 is BeliefState.EnemyOnSight or BeliefState.AlliesOnSight)
+            .Select(b => b.Item2 as Troop?).All(t => t?.Position != tower?.Position))
+            .DefaultIfEmpty()
+            .MinBy(t => Distance(actualTroop,
+                t));
+        if (selectedTower != null)
+        {
+            // Check if the amount of turns to get the supplies equal to the amount of supplies that can be spent on the way
+            var wayToTower = AStar.Find(actualTroop.Position, selectedTower.Value.GetVector2I(), n => n == selectedTower.Value.GetVector2I(), getNeighbours);
+            if (wayToTower.Count() == actualTroop.Supplies / actualTroop.Troops)
+                actions.Add((IntentionAction.GetSuplies, selectedTower, suppliesValue + distanceFactor / Distance(actualTroop, selectedTower)));
+        }
+
+        // if there is an ally tower on sight, stay close to it
+        if (beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight) && actualTroop.Defenders)
+            actions.Add((IntentionAction.StayClose,
+                beliefs.Where(b => b.Item1 == BeliefState.AllyTowerOnSight)
+                    .MinBy(b => Distance(actualTroop, b.Item2 as Troop?)).Item2, stayClose * ((actualTroop.Desire == DesireState.StayCalm) ? proStayCalm : consStayCalm)));
+
+        // if there is an ally on sight, stay close to it
+        if (beliefs.Any(b => b.Item1 == BeliefState.AlliesOnSight) && !actualTroop.Defenders)
+            return (IntentionAction.StayClose,
+                beliefs.Where(b => b.Item1 == BeliefState.AlliesOnSight)
+                    .MinBy(b => Distance(actualTroop, b.Item2 as Troop?)).Item2);
+
+        var result = actions.MinBy(a => a.Item3);
+        return (result.Item1, result.Item2);
+    }
     private static (IntentionAction, object?) GetIntention(Troop actualTroop,
         (BeliefState, object?)[] beliefs, Func<Vector2I, IEnumerable<Vector2I>> getNeighbours)
     {
@@ -181,8 +264,8 @@ static class Agent
                 actions.Add((IntentionAction.Attack, enemy));
             else
             {
-                if (beliefs.Contains((BeliefState.EnemyInRange, enemy)) && beliefs.Any(b=>b.Item1== BeliefState.AllyTowerInRange))
-                    actions.Add((IntentionAction.Move,beliefs.Where(b=>b.Item1== BeliefState.AllyTowerInRange).MinBy(t=> Distance(actualTroop,t.Item2 as Tower?))));
+                if (beliefs.Contains((BeliefState.EnemyInRange, enemy)) && beliefs.Any(b => b.Item1 == BeliefState.AllyTowerInRange))
+                    actions.Add((IntentionAction.Move, beliefs.Where(b => b.Item1 == BeliefState.AllyTowerInRange).MinBy(t => Distance(actualTroop, t.Item2 as Tower?))));
                 else
                     actions.Add((IntentionAction.Retreat, enemy));
             }
@@ -230,7 +313,7 @@ static class Agent
         else
         {
             // Go to get suppplies to the closest tower that is ally or havent enemies inside
-            var tower = towers
+            var tower = beliefs.Where(b => b.Item1 is BeliefState.AllyTowerOnSight or BeliefState.EnemyTowerOnSight).Select(b => b.Item2 as Tower?)
                 .Where(tower => troops.All(t => t?.Position != tower?.Position))
                 .DefaultIfEmpty()
                 .MinBy(t => Distance(actualTroop,
