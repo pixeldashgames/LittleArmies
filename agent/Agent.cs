@@ -171,7 +171,6 @@ static class Agent
                      .Select(b => b.Item2 as Troop?))
         {
             if (enemy == null) continue;
-
             var action = (actualTroop.Troops + (float)(actualTroop.Troops) * (int)actualTroop.Terrain / 100f) /
                          (enemy.Value.Troops + enemy.Value.Troops *
                              ((int)actualTroop.Terrain / 100f));
@@ -253,10 +252,13 @@ static class Agent
 
 
         // When the desire is to stay close
-
+        if (actualTroop.Desire == DesireState.GoAhead)
+            return (IntentionAction.Move, null);
         // if there is an ally tower on sight, stay close to it
         if (beliefs.Any(b => b.Item1 == BeliefState.AllyTowerOnSight) && actualTroop.Defenders)
-            return (IntentionAction.StayClose, beliefs.First(b => b.Item1 == BeliefState.AllyTowerOnSight).Item2);
+            return (IntentionAction.StayClose,
+                beliefs.Where(b => b.Item1 == BeliefState.AllyTowerOnSight)
+                    .MinBy(b => Distance(actualTroop, b.Item2 as Troop?)).Item2);
 
         // if there is an ally on sight, stay close to it
         if (beliefs.Any(b => b.Item1 == BeliefState.AlliesOnSight) && !actualTroop.Defenders)
@@ -264,13 +266,9 @@ static class Agent
                 beliefs.Where(b => b.Item1 == BeliefState.AlliesOnSight)
                     .MinBy(b => Distance(actualTroop, b.Item2 as Troop?)).Item2);
 
-        // if actual troop desire is to stay close
-        if (actualTroop.Desire == DesireState.StayCalm)
-        {
-            // if there is an enemy on sight, attack the closest one
-            if (beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight) && actions.Count > 0)
-                return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
-        }
+        // if there is an enemy on sight, attack the closest one
+        if (beliefs.Any(b => b.Item1 == BeliefState.EnemyOnSight) && actions.Count > 0)
+            return actions.MinBy(i => Distance(actualTroop, i.Item2 as Troop?));
 
         return (IntentionAction.Wait, null);
     }
