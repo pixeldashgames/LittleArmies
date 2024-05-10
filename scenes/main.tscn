@@ -1,12 +1,16 @@
-[gd_scene load_steps=4 format=3 uid="uid://cutn6ugisyp1m"]
+[gd_scene load_steps=7 format=3 uid="uid://cutn6ugisyp1m"]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_0dgkd"]
 [ext_resource type="PackedScene" uid="uid://bwro3su7uu5nc" path="res://scenes/game_controller.tscn" id="1_i1fyr"]
 [ext_resource type="PackedScene" uid="uid://btm0ideedjvm7" path="res://scenes/user_interface.tscn" id="2_xc6t0"]
+[ext_resource type="PackedScene" uid="uid://cwq05q1j7y6oc" path="res://scenes/units/kalm_defender.tscn" id="3_r8y2e"]
+[ext_resource type="PackedScene" uid="uid://cfyftids0wiyy" path="res://scenes/units/rush_defender.tscn" id="4_gqqi2"]
+[ext_resource type="PackedScene" uid="uid://d3xrk6kvljv32" path="res://scenes/units/player_unit.tscn" id="5_yhdgc"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_0dgkd")
 
 [node name="GameController" parent="." instance=ExtResource("1_i1fyr")]
+defender_scenes = Array[PackedScene]([ExtResource("3_r8y2e"), ExtResource("3_r8y2e"), ExtResource("4_gqqi2"), ExtResource("3_r8y2e"), ExtResource("5_yhdgc")])
 
 [node name="UserInterface" parent="." instance=ExtResource("2_xc6t0")]

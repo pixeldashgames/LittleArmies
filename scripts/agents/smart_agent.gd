@@ -57,6 +57,7 @@ func get_csharp_params() -> Array:
 			else:
 				dict["position_known"] = true
 			return dict)
+
 	var castles = controller.castles.map(func(c): return c.to_dict())
 
 	return [this_unit, other_units, castles]

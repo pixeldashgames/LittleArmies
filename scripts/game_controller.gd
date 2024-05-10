@@ -145,7 +145,6 @@ signal game_over(result: GameOverResult)
 @onready var time_between_turns: Timer = $TimeBetweenTurns
 
 @onready var camera: Camera3D = $Camera3D
-@onready var hex_math = $HexMath
 @onready var visibility_map = $VisibilityMap
 @onready var terrain_renderer = $TerrainRenderer
 @onready var underground_renderer = $UndergroundRenderer
@@ -194,7 +193,7 @@ func start_game():
 	print("Generating visibility map")
 
 	visibility_map.GenerateVisibilityMap(game_map.map_generator.width, game_map.map_generator.height, 
-		hex_math, game_map.get_height_at, game_map.has_water_in, 
+		game_map.get_height_at, game_map.has_water_in, 
 		game_map.has_forest_in, game_map.has_mountain_in, game_map.is_valid_pos)
 
 	print("Generated! It only took ", (Time.get_ticks_msec() - startTime) / 1000.0, "s!")
@@ -485,11 +484,20 @@ func _update_castles():
 	castle_properties_objects.clear()
 
 	for castle in castles:
-		if castle.owner_team and castle.claim_progress != 1:
-			# stop siege if no enemy is in the castle
-			var enemy_in_castle = units_array.filter(func(u): return u.current_position == castle.position and u.team != castle.owner_team)
-			if len(enemy_in_castle) == 0:
+		var enemy_in_castle = units_array.filter(func(u): return u.current_position == castle.position and u.team != castle.owner_team).size() != 0
+
+		# stop siege if no enemy is in the castle
+		if not enemy_in_castle:
+			if castle.owner_team == -1 and castle.claim_progress != 0:
+				castle.claim_progress = 0
+			elif castle.owner_team != -1 and castle.claim_progress != 1:
 				castle.claim_progress = 1
+
+		for i in range(teams_knowledge.size()):
+			if castle.owner_team == i:
+				teams_knowledge[i].update_visibility_source(castle, castle.position, castle_visibility_multiplier)
+			else:
+				teams_knowledge[i].remove_visibility_source(castle)
 
 		var pos = game_map.get_game_pos(castle.position)
 		var castle_properties = castle_properties_scene.instantiate()

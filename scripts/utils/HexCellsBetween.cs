@@ -7,6 +7,16 @@ using System.Threading.Tasks;
 
 public partial class HexCellsBetween : Node
 {
+    public struct BetweenLevel(Vector2I first, Vector2I? second = null)
+    {
+        public readonly Vector2I First => first;
+        public Vector2I? Second
+        {
+            readonly get => second;
+            set => second = value;
+        }
+    }
+
     const float SQRT3 = 1.73205080757f;
 
     private static int Mod(int a, int b)
@@ -32,21 +42,76 @@ public partial class HexCellsBetween : Node
         return pos + dirs[side];
     }
 
-    public Array<Array<Vector2I>> GetAllCellsBetween(Vector2I from, Array<Vector2I> targets)
+    public static List<BetweenLevel>[] GetAllCellsBetween(Vector2I from, List<Vector2I> targets)
     {
-        var results = new Array<Vector2I>[targets.Count];
+        var results = new List<BetweenLevel>[targets.Count];
 
         Parallel.For(0, targets.Count, i =>
         {
             results[i] = GetCellsBetween(from, targets[i]);
         });
 
-        return new Array<Array<Vector2I>>(results);
+        return results;
     }
 
-    public Array<Vector2I> GetCellsBetween(Vector2I from, Vector2I to)
+    // public static List<BetweenLevel> GetCellsBetween(Vector2I from, Vector2I to)
+    // {
+    //     List<BetweenLevel> cells = [new(from)];
+
+    //     var target = GetCellPos(to);
+    //     var origin = GetCellPos(from);
+
+    //     var originToTarget = (target - origin).Normalized();
+
+    //     var current = from;
+
+    //     var visited = new List<Vector2I>();
+
+    //     while (current != to)
+    //     {
+    //         var currentPos = GetCellPos(current);
+
+    //         var adjacents = Enumerable.Range(0, 6)
+    //             .Select(n => HexSideToAdjacent(current, n))
+    //             .Where(a => !visited.Contains(a)).ToList()
+    //             .Select(a => (cell: a, pos: GetCellPos(a)));
+
+    //         float bestDot = -1;
+    //         BetweenLevel betweenLevel = new(from);
+
+    //         foreach (var (cell, pos) in adjacents)
+    //         {
+    //             if (cell == to)
+    //             {
+    //                 cells.Add(new(to));
+    //                 return cells;
+    //             }
+    
+    //             visited.Add(cell);
+
+    //             var originToAdj = (pos - origin).Normalized();
+
+    //             var dot = originToAdj.Dot(originToTarget);
+
+    //             if (MathF.Abs(dot - bestDot) <= 0.0001) {
+    //                 betweenLevel.Second = cell;
+    //             }
+    //             else if (dot > bestDot) {
+    //                 bestDot = dot;
+    //                 betweenLevel = new(cell);
+    //             }
+    //         }
+
+    //         current = betweenLevel.First;
+    //         cells.Add(betweenLevel);
+    //     }
+
+    //     return cells;
+    // }
+
+    public static List<BetweenLevel> GetCellsBetween(Vector2I from, Vector2I to)
     {
-        var cells = new Array<Vector2I> { from };
+        List<BetweenLevel> cells = [new(from)];
 
         var target = GetCellPos(to);
         var origin = GetCellPos(from);
@@ -71,7 +136,7 @@ public partial class HexCellsBetween : Node
 
             if (adjacents.Any(n => n.cell == to))
             {
-                cells.Add(to);
+                cells.Add(new(to));
                 return cells;
             }
 
@@ -85,13 +150,12 @@ public partial class HexCellsBetween : Node
                 return (n.cell, originToAdj.Dot(originToTarget));
             }).OrderByDescending<(Vector2I cell, float dot), float>(d => d.dot).ToList();
 
-            if (dots.Count > 1 && MathF.Abs(dots[0].dot - dots[1].dot) <= 0.0001)
-            {
-                cells.Add(dots[1].cell);
-            }
-
             current = dots[0].cell;
-            cells.Add(current);
+
+            if (dots.Count > 1 && MathF.Abs(dots[0].dot - dots[1].dot) <= 0.0001)
+                cells.Add(new(current, dots[1].cell));
+            else
+                cells.Add(new(current));
         }
 
         return cells;
