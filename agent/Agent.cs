@@ -163,6 +163,7 @@ static class Agent
         return beliefs;
     }
 
+
     private static (IntentionAction, object?) GetIntention(Troop actualTroop,
         (BeliefState, object?)[] beliefs, Func<Vector2I, IEnumerable<Vector2I>> getNeighbours)
     {
@@ -180,7 +181,9 @@ static class Agent
                 actions.Add((IntentionAction.Attack, enemy));
             else
             {
-                if (beliefs.Contains((BeliefState.EnemyInRange, enemy)))
+                if (beliefs.Contains((BeliefState.EnemyInRange, enemy)) && beliefs.Any(b=>b.Item1== BeliefState.AllyTowerInRange))
+                    actions.Add((IntentionAction.Move,beliefs.Where(b=>b.Item1== BeliefState.AllyTowerInRange).MinBy(t=> Distance(actualTroop,t.Item2 as Tower?))));
+                else
                     actions.Add((IntentionAction.Retreat, enemy));
             }
         }
