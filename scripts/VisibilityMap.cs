@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Array = Godot.Collections.Array;
 using BetweenLevel = HexCellsBetween.BetweenLevel;
+using Mutex = System.Threading.Mutex;
 
 public partial class VisibilityMap : Node
 {
@@ -57,17 +58,63 @@ public partial class VisibilityMap : Node
     {
         var allCells = new List<Vector2I>();
         map = new float[height][][][];
+
+        var mutexes = new Mutex[height][][][];
+
         for (var i = 0; i < height; i++)
         {
             map[i] = new float[width][][];
+            mutexes[i] = new Mutex[width][][];
             for (var j = 0; j < width; j++)
+            {
                 allCells.Add(new Vector2I(j, i));
+                mutexes[i][j] = new Mutex[height][];
+                map[i][j] = new float[height][];
+
+                for (var k = 0; k < height; k++)
+                {
+                    mutexes[i][j][k] = new Mutex[width];
+                    map[i][j][k] = new float[width];
+                    for (var l = 0; l < width; l++)
+                    {
+                        mutexes[i][j][k][l] = new();
+                        map[i][j][k][l] = -1f;
+                    }
+                }
+            }
         }
 
         Parallel.For(0, allCells.Count, i =>
         {
             var cell = allCells[i];
-            map[cell.Y][cell.X] = GenerateCellVisibilityMap(cell, allCells, width, height, getHeightFunc, hasWaterInFunc, hasForestInFunc, hasMountainInFunc, isValidGamePosFunc);
+            // map[cell.Y][cell.X] = GenerateCellVisibilityMap(cell, allCells, width, height, getHeightFunc, hasWaterInFunc, hasForestInFunc, hasMountainInFunc, isValidGamePosFunc);
+
+            var inBetweenCells = HexCellsBetween.GetAllCellsBetween(cell, allCells);
+
+            Parallel.For(0, allCells.Count, i =>
+            {
+                var target = allCells[i];
+
+                mutexes[cell.Y][cell.X][target.Y][target.X].WaitOne();
+
+                if (map[cell.Y][cell.X][target.Y][target.X] >= 0)
+                {
+                    mutexes[cell.Y][cell.X][target.Y][target.X].ReleaseMutex();
+                    return;
+                }
+
+                map[cell.Y][cell.X][target.Y][target.X] = CalculateVisibilityForCell(cell, target, inBetweenCells[i], getHeightFunc, hasWaterInFunc, hasForestInFunc, hasMountainInFunc, isValidGamePosFunc, out var cancelOpposite);
+
+                mutexes[cell.Y][cell.X][target.Y][target.X].ReleaseMutex();
+
+                if (cancelOpposite)
+                {
+                    mutexes[target.Y][target.X][cell.Y][cell.X].WaitOne();
+                    if (map[target.Y][target.X][cell.Y][cell.X] < 0)
+                        map[target.Y][target.X][cell.Y][cell.X] = 0;
+                    mutexes[target.Y][target.X][cell.Y][cell.X].ReleaseMutex();
+                }
+            });
         });
     }
 
@@ -76,20 +123,51 @@ public partial class VisibilityMap : Node
         var inBetweenCells = HexCellsBetween.GetAllCellsBetween(cell, allCells);
 
         var visibilityMap = new float[height][];
+        var mutexes = new Mutex[height][];
         for (var i = 0; i < height; i++)
+        {
             visibilityMap[i] = new float[width];
+            mutexes[i] = new Mutex[width];
+            for (var j = 0; j < width; j++)
+            {
+                visibilityMap[i][j] = -1f;
+                mutexes[i][j] = new();
+            }
+        }
 
         Parallel.For(0, allCells.Count, i =>
         {
             var target = allCells[i];
-            visibilityMap[target.Y][target.X] = CalculateVisibilityForCell(cell, target, inBetweenCells[i], getHeightFunc, hasWaterInFunc, hasForestInFunc, hasMountainInFunc, isValidGamePosFunc);
+
+            mutexes[target.Y][target.X].WaitOne();
+
+            if (visibilityMap[target.Y][target.X] >= 0)
+            {
+                mutexes[target.Y][target.X].ReleaseMutex();
+                return;
+            }
+
+
+            visibilityMap[target.Y][target.X] = CalculateVisibilityForCell(cell, target, inBetweenCells[i], getHeightFunc, hasWaterInFunc, hasForestInFunc, hasMountainInFunc, isValidGamePosFunc, out var cancelOpposite);
+
+            mutexes[target.Y][target.X].ReleaseMutex();
+
+            if (cancelOpposite)
+            {
+                mutexes[target.X][target.Y].WaitOne();
+                if (visibilityMap[target.X][target.Y] < 0)
+                    visibilityMap[target.X][target.Y] = 0;
+                mutexes[target.X][target.Y].ReleaseMutex();
+            }
         });
 
         return visibilityMap;
     }
 
-    private float CalculateVisibilityForCell(Vector2I from, Vector2I to, List<BetweenLevel> inBetweenCells, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc)
+    private float CalculateVisibilityForCell(Vector2I from, Vector2I to, List<BetweenLevel> inBetweenCells, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc, out bool cancelOpposite)
     {
+        cancelOpposite = false;
+
         if (from == to)
             return 1;
 
@@ -104,13 +182,15 @@ public partial class VisibilityMap : Node
         else
             visibility = PlainsInitialVisibilityMultiplier;
 
+        var initialVisibility = visibility;
+
         var thisHeight = getHeightFunc.Call(from).As<float>();
 
         var heightChangePoint = thisHeight;
         var increasedHeight = false;
         var lastHeight = heightChangePoint;
 
-        foreach(var level in inBetweenCells)
+        foreach (var level in inBetweenCells)
         {
             Vector2I[] cells = level.Second.HasValue ? [level.First, level.Second.Value] : [level.First];
             List<float> visibilityPenalties = [], heights = [];
@@ -140,7 +220,21 @@ public partial class VisibilityMap : Node
             visibility -= visibilityPenalties.Average();
 
             if (visibility < 0)
+            {
+                float toInitialVisibility;
+                if (hasWaterInFunc.Call(to).As<bool>())
+                    toInitialVisibility = WaterInitialVisibilityMultiplier;
+                else if (hasForestInFunc.Call(to).As<bool>())
+                    toInitialVisibility = ForestInitialVisibilityMultiplier;
+                else if (hasMountainInFunc.Call(to).As<bool>())
+                    toInitialVisibility = MountainInitialVisibilityMultiplier;
+                else
+                    toInitialVisibility = PlainsInitialVisibilityMultiplier;
+
+                if (initialVisibility >= toInitialVisibility - 0.001)
+                    cancelOpposite = true;
                 return 0;
+            }
 
             var height = heights.Average();
 
