@@ -145,7 +145,6 @@ signal game_over(result: GameOverResult)
 @onready var time_between_turns: Timer = $TimeBetweenTurns
 
 @onready var camera: Camera3D = $Camera3D
-@onready var hex_math = $HexMath
 @onready var visibility_map = $VisibilityMap
 @onready var terrain_renderer = $TerrainRenderer
 @onready var underground_renderer = $UndergroundRenderer
@@ -194,7 +193,7 @@ func start_game():
 	print("Generating visibility map")
 
 	visibility_map.GenerateVisibilityMap(game_map.map_generator.width, game_map.map_generator.height, 
-		hex_math, game_map.get_height_at, game_map.has_water_in, 
+		game_map.get_height_at, game_map.has_water_in, 
 		game_map.has_forest_in, game_map.has_mountain_in, game_map.is_valid_pos)
 
 	print("Generated! It only took ", (Time.get_ticks_msec() - startTime) / 1000.0, "s!")

@@ -1,9 +1,11 @@
 using Godot;
 using Godot.Collections;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Array = Godot.Collections.Array;
+using BetweenLevel = HexCellsBetween.BetweenLevel;
 
 public partial class VisibilityMap : Node
 {
@@ -23,7 +25,8 @@ public partial class VisibilityMap : Node
 
     private float[][][][] map;
 
-    public Array<Array<float>> GetVisibilityMap(Array<Vector2I> sourcePositions, Array<float> sourceVisibilityMultipliers) {
+    public Array<Array<float>> GetVisibilityMap(Array<Vector2I> sourcePositions, Array<float> sourceVisibilityMultipliers)
+    {
         var allCells = new Array<Vector2I>();
         var result = new float[map.Length][];
         for (var i = 0; i < map.Length; i++)
@@ -50,9 +53,9 @@ public partial class VisibilityMap : Node
             .Max(), 0, 1);
     }
 
-    public void GenerateVisibilityMap(int width, int height, Node hexCellsBetween, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc)
+    public void GenerateVisibilityMap(int width, int height, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc)
     {
-        var allCells = new Array<Vector2I>();
+        var allCells = new List<Vector2I>();
         map = new float[height][][][];
         for (var i = 0; i < height; i++)
         {
@@ -64,13 +67,13 @@ public partial class VisibilityMap : Node
         Parallel.For(0, allCells.Count, i =>
         {
             var cell = allCells[i];
-            map[cell.Y][cell.X] = GenerateCellVisibilityMap(cell, allCells, width, height, (HexCellsBetween)hexCellsBetween, getHeightFunc, hasWaterInFunc, hasForestInFunc, hasMountainInFunc, isValidGamePosFunc);
+            map[cell.Y][cell.X] = GenerateCellVisibilityMap(cell, allCells, width, height, getHeightFunc, hasWaterInFunc, hasForestInFunc, hasMountainInFunc, isValidGamePosFunc);
         });
     }
 
-    private float[][] GenerateCellVisibilityMap(Vector2I cell, Array<Vector2I> allCells, int width, int height, HexCellsBetween hexCellsBetween, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc)
+    private float[][] GenerateCellVisibilityMap(Vector2I cell, List<Vector2I> allCells, int width, int height, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc)
     {
-        var inBetweenCells = hexCellsBetween.GetAllCellsBetween(cell, allCells);
+        var inBetweenCells = HexCellsBetween.GetAllCellsBetween(cell, allCells);
 
         var visibilityMap = new float[height][];
         for (var i = 0; i < height; i++)
@@ -85,11 +88,10 @@ public partial class VisibilityMap : Node
         return visibilityMap;
     }
 
-    private float CalculateVisibilityForCell(Vector2I from, Vector2I to, Array<Vector2I> inBetweenCells, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc)
+    private float CalculateVisibilityForCell(Vector2I from, Vector2I to, List<BetweenLevel> inBetweenCells, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc)
     {
         if (from == to)
             return 1;
-
 
         float visibility;
 
@@ -108,25 +110,40 @@ public partial class VisibilityMap : Node
         var increasedHeight = false;
         var lastHeight = heightChangePoint;
 
-        for (var i = 1; i < inBetweenCells.Count; i++)
+        foreach(var level in inBetweenCells)
         {
-            var c = inBetweenCells[i];
-            if (!isValidGamePosFunc.Call(c).As<bool>())
-                continue;
+            Vector2I[] cells = level.Second.HasValue ? [level.First, level.Second.Value] : [level.First];
+            List<float> visibilityPenalties = [], heights = [];
 
-            if (hasWaterInFunc.Call(c).As<bool>())
-                visibility -= WaterVisibilityPenalty;
-            else if (hasForestInFunc.Call(c).As<bool>())
-                visibility -= ForestVisibilityPenalty;
-            else if (hasMountainInFunc.Call(c).As<bool>())
-                visibility -= MountainVisibilityPenalty;
-            else
-                visibility -= PlainsVisibilityPenalty;
+            foreach (var c in cells)
+            {
+                float visPenalty = 0;
+
+                if (!isValidGamePosFunc.Call(c).As<bool>())
+                    continue;
+
+                if (hasWaterInFunc.Call(c).As<bool>())
+                    visPenalty += WaterVisibilityPenalty;
+                else if (hasForestInFunc.Call(c).As<bool>())
+                    visPenalty += ForestVisibilityPenalty;
+                else if (hasMountainInFunc.Call(c).As<bool>())
+                    visPenalty += MountainVisibilityPenalty;
+                else
+                    visPenalty += PlainsVisibilityPenalty;
+
+                var h = getHeightFunc.Call(c).As<float>();
+
+                visibilityPenalties.Add(visPenalty);
+                heights.Add(h);
+            }
+
+            visibility -= visibilityPenalties.Average();
 
             if (visibility < 0)
                 return 0;
 
-            var height = getHeightFunc.Call(c).As<float>();
+            var height = heights.Average();
+
             if (height > lastHeight)
             {
                 increasedHeight = true;
@@ -161,3 +178,129 @@ public partial class VisibilityMap : Node
         return Mathf.Clamp(visibility, 0, 1);
     }
 }
+
+/*
+public void GenerateVisibilityMap(int width, int height, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc)
+    {
+        var allCells = new List<Vector2I>();
+        map = new float[height][][][];
+        for (var i = 0; i < height; i++)
+        {
+            map[i] = new float[width][][];
+            for (var j = 0; j < width; j++)
+                allCells.Add(new Vector2I(j, i));
+        }
+
+        Parallel.For(0, allCells.Count, i =>
+        {
+            var cell = allCells[i];
+            map[cell.Y][cell.X] = GenerateCellVisibilityMap(cell, allCells, width, height, getHeightFunc, hasWaterInFunc, hasForestInFunc, hasMountainInFunc, isValidGamePosFunc);
+        });
+    }
+
+    private float[][] GenerateCellVisibilityMap(Vector2I cell, List<Vector2I> allCells, int width, int height, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc)
+    {
+        var inBetweenCells = HexCellsBetween.GetAllCellsBetween(cell, allCells);
+
+        var visibilityMap = new float[height][];
+        for (var i = 0; i < height; i++)
+            visibilityMap[i] = new float[width];
+
+        Parallel.For(0, allCells.Count, i =>
+        {
+            var target = allCells[i];
+            visibilityMap[target.Y][target.X] = CalculateVisibilityForCell(cell, target, inBetweenCells[i], getHeightFunc, hasWaterInFunc, hasForestInFunc, hasMountainInFunc, isValidGamePosFunc);
+        });
+
+        return visibilityMap;
+    }
+
+    private float CalculateVisibilityForCell(Vector2I from, Vector2I to, IEnumerable<IEnumerable<Vector2I>> inBetweenCells, Callable getHeightFunc, Callable hasWaterInFunc, Callable hasForestInFunc, Callable hasMountainInFunc, Callable isValidGamePosFunc)
+    {
+        if (from == to)
+            return 1;
+
+        float visibility;
+
+        if (hasWaterInFunc.Call(from).As<bool>())
+            visibility = WaterInitialVisibilityMultiplier;
+        else if (hasForestInFunc.Call(from).As<bool>())
+            visibility = ForestInitialVisibilityMultiplier;
+        else if (hasMountainInFunc.Call(from).As<bool>())
+            visibility = MountainInitialVisibilityMultiplier;
+        else
+            visibility = PlainsInitialVisibilityMultiplier;
+
+        var thisHeight = getHeightFunc.Call(from).As<float>();
+
+        var heightChangePoint = thisHeight;
+        var increasedHeight = false;
+        var lastHeight = heightChangePoint;
+
+        foreach (var ib in inBetweenCells)
+        {
+            List<float> visibilityPenalties = [], heights = [];
+
+            foreach (var c in ib)
+            {
+                float visPenalty = 0;
+
+                if (!isValidGamePosFunc.Call(c).As<bool>())
+                    continue;
+
+                if (hasWaterInFunc.Call(c).As<bool>())
+                    visPenalty -= WaterVisibilityPenalty;
+                else if (hasForestInFunc.Call(c).As<bool>())
+                    visPenalty -= ForestVisibilityPenalty;
+                else if (hasMountainInFunc.Call(c).As<bool>())
+                    visPenalty -= MountainVisibilityPenalty;
+                else
+                    visPenalty -= PlainsVisibilityPenalty;
+
+                var h = getHeightFunc.Call(c).As<float>();
+
+                visibilityPenalties.Add(visPenalty);
+                heights.Add(h);
+            }
+
+            visibility -= visibilityPenalties.Average();
+
+            if (visibility < 0)
+                return 0;
+
+            var height = heights.Average();
+
+            if (height > lastHeight)
+            {
+                increasedHeight = true;
+                if (height > heightChangePoint)
+                    heightChangePoint = height;
+                lastHeight = height;
+            }
+            else if (!increasedHeight)
+            {
+                heightChangePoint = height;
+                lastHeight = height;
+            }
+
+            if (heightChangePoint - thisHeight > MaxAltitudeDifferenceForVisibility)
+                return 0;
+        }
+
+        var curve = thisHeight > heightChangePoint ? AltitudeDecreaseVisibilityMultiplierCurve : AltitudeIncreaseVisibilityMultiplierCurve;
+
+        var value = Mathf.Clamp(Mathf.Abs(thisHeight - heightChangePoint) / MaxAltitudeDifferenceForVisibility, 0, 1);
+
+        var unsignedValue = thisHeight > heightChangePoint ? value : 1 - value;
+
+        var altitudeVisMultiplier = Mathf.Ease(unsignedValue, curve);
+
+        var rangeMin = thisHeight > heightChangePoint ? 1.0f : AltitudeDifferenceMultiplierRange.X;
+
+        var rangeMax = thisHeight > heightChangePoint ? AltitudeDifferenceMultiplierRange.Y : 1.0f;
+
+        visibility *= Mathf.Lerp(rangeMin, rangeMax, altitudeVisMultiplier);
+
+        return Mathf.Clamp(visibility, 0, 1);
+    }
+*/

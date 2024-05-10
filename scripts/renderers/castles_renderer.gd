@@ -1,11 +1,7 @@
 extends CellRenderer
 
-func render(game_map: GameMap, from: Vector2i, to: Vector2i):
-	var chunk_rect = Rect2i()
-	chunk_rect.position = from
-	chunk_rect.end = to
-	
-	var castles_array = game_map.castles_array.filter(func(v): chunk_rect.has_point(v))	
+func render(game_map: GameMap):
+	var castles_array = game_map.castles_array
 
 	var new_multimesh = MultiMesh.new()
 	new_multimesh.transform_format = MultiMesh.TRANSFORM_3D
