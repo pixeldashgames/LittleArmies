@@ -1,0 +1,13 @@
+[gd_scene load_steps=4 format=3 uid="uid://dotxrymt3aeuq"]
+
+[ext_resource type="ArrayMesh" uid="uid://dxsvoifjb72jn" path="res://art/modified meshes/castle.res" id="1_nwyu4"]
+[ext_resource type="Script" path="res://scripts/renderers/castles_renderer.gd" id="2_bk048"]
+
+[sub_resource type="MultiMesh" id="MultiMesh_4qpqb"]
+transform_format = 1
+use_custom_data = true
+mesh = ExtResource("1_nwyu4")
+
+[node name="CastlesRenderer" type="MultiMeshInstance3D"]
+multimesh = SubResource("MultiMesh_4qpqb")
+script = ExtResource("2_bk048")

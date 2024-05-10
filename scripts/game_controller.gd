@@ -10,33 +10,42 @@ class EnemyPositionKnowledge:
 		self.last_seen = -1
 
 class Knowledge:
-	var cells_visibility: Array
+	var visibility_sources: Dictionary = {}
 	var enemy_positions: Dictionary
+	var game_controller: GameController
 
 	@warning_ignore("shadowed_variable")
-	func _init(width: int, height: int, enemies: Array[Unit]):
-		self.cells_visibility = []
-		for i in height:
-			self.cells_visibility.append([])
-			for j in width:
-				self.cells_visibility[i].append({})
+	func _init(enemies: Array[Unit], game_controller: GameController):
+		self.game_controller = game_controller
 		self.enemy_positions = {}
 		for e in enemies:
 			self.enemy_positions[e] = EnemyPositionKnowledge.new()
 	
-	func reset_visibility_map_for(source):
-		for i in len(cells_visibility):
-			for j in len(cells_visibility[i]):
-				cells_visibility[i][j].erase(source)
+	func remove_visibility_source(source):
+		visibility_sources.erase(source)
 
 	func get_visibility_at(pos: Vector2i):
-		var visibility_values = cells_visibility[pos.y][pos.x].values()
-		if len(visibility_values) == 0:
-			return 0
-		return visibility_values.max()
+		var source_positions = []
+		var source_multipliers = []
 
-	func set_cell_visibility(source, cell: Vector2i, visibility: float):
-		cells_visibility[cell.y][cell.x][source] = visibility
+		for source in visibility_sources:
+			source_positions.append(visibility_sources[source].position)
+			source_multipliers.append(visibility_sources[source].multiplier)
+
+		return game_controller.visibility_map.GetVisibilityAt(pos, source_positions, source_multipliers)
+	
+	func get_visibility_map():
+		var source_positions = []
+		var source_multipliers = []
+
+		for source in visibility_sources:
+			source_positions.append(visibility_sources[source].position)
+			source_multipliers.append(visibility_sources[source].multiplier)
+		
+		return game_controller.visibility_map.GetVisibilityMap(source_positions, source_multipliers)
+
+	func update_visibility_source(source, pos: Vector2i, multiplier: float):
+		visibility_sources[source] = VisibilitySource.new(pos, multiplier)
 
 class Castle:
 	var name: String
@@ -79,6 +88,15 @@ class Castle:
 			"supplies": supplies
 		}
 
+class VisibilitySource:
+	var position: Vector2i
+	var multiplier: float
+
+	@warning_ignore("shadowed_variable")
+	func _init(pos: Vector2i, multiplier: float):
+		self.position = pos
+		self.multiplier = multiplier
+
 enum CastleClaimResult {
 	CONQUERED,
 	NEUTRALIZED,
@@ -101,21 +119,7 @@ const altitude_penalty_curve: float = 2.4
 const unit_separation: int = 5
 const unit_float_height: float = 2
 
-const plains_initial_visibility_multiplier: float = 1
-const water_initial_visibility_multiplier: float = 1.1
-const mountain_initial_visibility_multiplier: float = 2
-const forest_initial_visibility_multiplier: float = 0.5
-
-const plains_visibility_multiplier: float = 0.9
-const water_visibility_multiplier: float = 0.95
-const forest_visibility_multiplier: float = 0.3
-const mountain_visibility_multiplier: float = 0.05
-const max_altitude_difference_for_visibility: float = 2
-const altitude_decrease_visibility_multiplier_curve: float = 0.4
-const altitude_increase_visibility_multiplier_curve: float = 0.2
-const altitude_difference_multiplier_range := Vector2(0, 1.2)
-
-const castle_vigilance_range: float = 5
+const castle_visibility_multiplier: float = 2
 
 signal game_over(result: GameOverResult)
 
@@ -142,11 +146,15 @@ signal game_over(result: GameOverResult)
 
 @onready var camera: Camera3D = $Camera3D
 @onready var hex_math = $HexMath
+@onready var visibility_map = $VisibilityMap
 @onready var terrain_renderer = $TerrainRenderer
 @onready var underground_renderer = $UndergroundRenderer
+@onready var castles_renderer = $CastlesRenderer
 @onready var water_renderer = $WaterRenderer
 @onready var forests_renderer = $ForestsRenderer
 @onready var mountains_renderer = $MountainsRenderer
+
+var is_test = false
 
 var defenders_battles_won = 0
 var attackers_battles_won = 0
@@ -163,17 +171,17 @@ var teams_knowledge: Array[Knowledge] = []
 
 var castles: Array[Castle] = []
 
-func _ready():
+func start_game():
 	game_map.generate()
 
 	_run_full_render()
 	_generate_units()
 
+	teams_knowledge = []
+	castles = []
+
 	for team in range(len(teams_unit_counts)):
-		teams_knowledge.append(\
-			Knowledge.new(game_map.map_generator.width, \
-				game_map.map_generator.height, \
-				units_array.filter(func(u): return u.team != team)))
+		teams_knowledge.append(Knowledge.new(units_array.filter(func(u): return u.team != team), self))
 
 	for i in range(len(game_map.castles_array)):
 		var pos = game_map.castles_array[i]
@@ -181,7 +189,21 @@ func _ready():
 		var castle_letter = char(65 + i)
 		castles.append(Castle.new(castle_letter, pos, 0, castle_supplies_starting_values.pick_random()))
 
-	_update_castles_visibility()
+	var startTime = Time.get_ticks_msec()
+
+	print("Generating visibility map")
+
+	visibility_map.GenerateVisibilityMap(game_map.map_generator.width, game_map.map_generator.height, 
+		hex_math, game_map.get_height_at, game_map.has_water_in, 
+		game_map.has_forest_in, game_map.has_mountain_in, game_map.is_valid_pos)
+
+	print("Generated! It only took ", (Time.get_ticks_msec() - startTime) / 1000.0, "s!")
+
+	for u in units_array:
+		teams_knowledge[u.team].update_visibility_source(u, u.current_position, u.get_visibility_multiplier())
+	
+	for castle in castles:
+		teams_knowledge[0].update_visibility_source(castle, castle.position, castle_visibility_multiplier)
 
 	for u in units_array:
 		_update_knowledge(u)
@@ -196,20 +218,32 @@ func _ready():
 	camera.limits = Rect2(Vector2.ZERO, game_map.get_game_pos2d(game_map.get_size()))
 
 func _run_full_render():
+	if is_test:
+		return
+
 	terrain_renderer.render(game_map)
 	underground_renderer.render(game_map)
 	water_renderer.render(game_map)
 	forests_renderer.render(game_map)
 	mountains_renderer.render(game_map)
+	castles_renderer.render(game_map)
 
 func _render_all_shadows(team: int):
+	if is_test:
+		return
+
+	var maps
 	var visibility_function: Callable
 	if team == - 1:
-		visibility_function = func(pos: Vector2i): \
-			return max(teams_knowledge[0].get_visibility_at(pos), \
-				teams_knowledge[1].get_visibility_at(pos))
+		maps = teams_knowledge.map(func(k): return k.get_visibility_map())
 	else:
-		visibility_function = teams_knowledge[team].get_visibility_at
+		maps = [teams_knowledge[team].get_visibility_map()]
+
+	visibility_function = func(pos: Vector2i):
+		var visibility = 0
+		for map in maps:
+			visibility = max(visibility, map[pos.y][pos.x])
+		return visibility
 	
 	# var image = Image.create(len(teams_knowledge[team].cells_visibility[0]), len(teams_knowledge[team].cells_visibility), false, Image.FORMAT_RGBA8)
 
@@ -226,6 +260,7 @@ func _render_all_shadows(team: int):
 	water_renderer.change_visibility(visibility_function)
 	forests_renderer.change_visibility(visibility_function)
 	mountains_renderer.change_visibility(visibility_function)
+	castles_renderer.change_visibility(visibility_function)
 
 func player_team() -> int:
 	var player = units_array.filter(func(u): return u.agent is UserAgent)
@@ -270,7 +305,9 @@ func _game_loop():
 
 					_update_knowledge(unit)
 
-			time_between_turns.start()
+			if not is_test:
+				time_between_turns.start()
+			
 			_update_units(player_team())
 			_update_castles()
 			_render_all_shadows(player_team())
@@ -278,7 +315,7 @@ func _game_loop():
 			if _is_game_over() != GameOverResult.NOT_OVER:
 				break
 
-			if not time_between_turns.is_stopped():
+			if not is_test and not time_between_turns.is_stopped():
 				await time_between_turns.timeout
 		total_duration += 1
 	
@@ -287,117 +324,18 @@ func _game_loop():
 func finish_game():
 	game_over.emit(_is_game_over())
 
-func get_cells_in_range(from: Vector2i, max_range: float):
-	var cells_in_range = [from]
-	var queue = [[from, max_range]]
-
-	while len(queue) > 0:
-		var current = queue.pop_front()
-
-		if current[1] <= 0:
-			continue
-
-		var directions = game_map.get_directions(current[0])
-		for dir in directions:
-			var new_pos = current[0] + dir
-
-			if not game_map.is_valid_pos(new_pos):
-				continue
-
-			if cells_in_range.has(new_pos):
-				continue
-
-			cells_in_range.append(new_pos)
-			queue.append([new_pos, current[1] - 1])
-
-	return cells_in_range
-
-func update_visibility_for_cell(source, from: Vector2i, c: Vector2i, cells_in_between: Array, this_height: float, team: int):
-	if from == c:
-		teams_knowledge[team].set_cell_visibility(source, from, 1)
-		return
-
-	var visibility
-	if game_map.has_water_in(from):
-		visibility = water_initial_visibility_multiplier
-	elif game_map.has_forest_in(from):
-		visibility = forest_initial_visibility_multiplier
-	elif game_map.has_mountain_in(from):
-		visibility = mountain_initial_visibility_multiplier
-	else:
-		visibility = plains_initial_visibility_multiplier
-
-	# var cells_in_between = HexagonMath.get_cells_between(from, c)
-
-	var height_change_point = this_height
-	var increased_height = false
-	var last_height = height_change_point
-	for i in range(1, len(cells_in_between)):
-		if not game_map.is_valid_pos(cells_in_between[i]):
-			continue
-
-		if game_map.has_water_in(cells_in_between[i]):
-			visibility *= water_visibility_multiplier
-		elif game_map.has_forest_in(cells_in_between[i]):
-			visibility *= forest_visibility_multiplier
-		elif game_map.has_mountain_in(cells_in_between[i]):
-			visibility *= mountain_visibility_multiplier
-		else:
-			visibility *= plains_visibility_multiplier
-		
-		var height = game_map.get_height_at(cells_in_between[i])
-		if height > last_height:
-			increased_height = true
-			if height > height_change_point:
-				height_change_point = height
-			last_height = height
-		elif not increased_height:
-			height_change_point = height
-			last_height = height
-		
-	var curve = altitude_decrease_visibility_multiplier_curve if this_height > height_change_point else altitude_increase_visibility_multiplier_curve
-
-	var value = clampf(abs(this_height - height_change_point) / max_altitude_difference_for_visibility, 0, 1)
-
-	var unsigned_value = value if this_height > height_change_point else (1 - value)
-
-	var altitude_vis_multiplier = ease(unsigned_value, curve)
-
-	var range_min = 1.0 if this_height > height_change_point else altitude_difference_multiplier_range.x
-	var range_max = altitude_difference_multiplier_range.y if this_height > height_change_point else 1.0
-
-	visibility *= lerpf(range_min, range_max, altitude_vis_multiplier)
-
-	teams_knowledge[team].set_cell_visibility(source, c, visibility)
-
-func _update_visibility_for_source(source, from: Vector2i, height: float, team: int, vigilance_range: float):
-	var cells_in_range = get_cells_in_range(from, vigilance_range)
-	var in_between_for_each_cell = hex_math.GetAllCellsBetween(from, cells_in_range)
-
-	for i in range(len(cells_in_range)):
-		update_visibility_for_cell(source, from, cells_in_range[i], in_between_for_each_cell[i], height, team)
-
-func _update_castles_visibility():
-	for castle in castles:
-		var height = game_map.get_height_at(castle.position)
-		_update_visibility_for_source(castle, castle.position, height, 0, castle_vigilance_range)
-
 func _update_knowledge(unit: Unit):
-	teams_knowledge[unit.team].reset_visibility_map_for(unit)
-
-	var vigilance_range = unit.get_vigilance_range()
-	var height = game_map.get_height_at(unit.current_position)
-
-	_update_visibility_for_source(unit, unit.current_position, height, unit.team, vigilance_range)
+	teams_knowledge[unit.team].update_visibility_source(unit, unit.current_position, unit.get_visibility_multiplier())
 
 	_update_units_knowledge()
 
 func _update_units_knowledge():
 	for u in units_array:
 		var pos = u.current_position
-		var chance = u.get_visibility_chance() * teams_knowledge[1 - u.team].get_visibility_at(pos)
-		var unit_knowledge = teams_knowledge[1 - u.team].enemy_positions[u]
-		if chance > 0:
+		var knowledge = teams_knowledge[1 - u.team]
+		var chance = u.get_visibility_chance() * knowledge.get_visibility_at(pos)
+		var unit_knowledge = knowledge.enemy_positions[u]
+		if chance > 0.001:
 			if unit_knowledge.last_seen == 0:
 				unit_knowledge.position = pos
 			elif randf() <= chance:
@@ -485,7 +423,7 @@ func destroy_unit(unit: Unit):
 	units_array.erase(unit)
 	for team in range(len(teams_knowledge)):
 		if team == unit.team:
-			teams_knowledge[team].reset_visibility_map_for(unit)
+			teams_knowledge[team].remove_visibility_source(unit)
 		else:
 			teams_knowledge[team].enemy_positions.erase(unit)
 
@@ -502,6 +440,8 @@ func _is_game_over() -> GameOverResult:
 		return GameOverResult.NOT_OVER
 
 func _generate_units():
+	units_array = []
+
 	var max_units_per_row = 1 + game_map.get_playable_size().x / unit_separation
 	
 	for i in range(len(teams_unit_counts)):
@@ -526,16 +466,15 @@ func _generate_units_row(team: int, count: int, row: int):
 
 func _generate_unit_at(pos: Vector2i, team: int):
 	var array = defender_scenes if team == 0 else attacker_scenes
-	var unit_scene = array.pick_random()
-	array.erase(unit_scene)
+
+	var unit_scene = array[units_array.size() % array.size()]
 
 	var unit = unit_scene.instantiate() as Unit
 
 	units_parent.add_child(unit)
 	if team == 0:
 		unit.rotation_degrees.y = 180
-	var unit_name = unit_names.pick_random()
-	unit_names.erase(unit_name)
+	var unit_name = unit_names[units_array.size()]
 	unit.initialize(self, unit_name, pos, team, count_starting_values.pick_random(), \
 		morale_starting_values.pick_random(), 0, supplies_starting_values.pick_random())
 	units_array.append(unit)

@@ -1,21 +1,14 @@
-[gd_scene load_steps=5 format=3 uid="uid://va5d7fiocsqv"]
+[gd_scene load_steps=4 format=3 uid="uid://va5d7fiocsqv"]
 
-[ext_resource type="ArrayMesh" uid="uid://cyofur41yukfp" path="res://art/terrain/hex_water_detail.obj" id="1_vo4se"]
+[ext_resource type="ArrayMesh" uid="uid://du8nloxoul0f4" path="res://art/modified meshes/hex_water.res" id="1_opn8p"]
 [ext_resource type="Script" path="res://scripts/renderers/water_renderer.gd" id="2_2ysky"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8sh0n"]
-albedo_color = Color(0.121569, 0.415686, 0.560784, 1)
-clearcoat_roughness = 0.83
 
 [sub_resource type="MultiMesh" id="MultiMesh_tfxlm"]
 transform_format = 1
-use_colors = true
-mesh = ExtResource("1_vo4se")
+use_custom_data = true
+mesh = ExtResource("1_opn8p")
 
 [node name="WaterRenderer" type="MultiMeshInstance3D"]
-material_override = SubResource("StandardMaterial3D_8sh0n")
 cast_shadow = 0
 multimesh = SubResource("MultiMesh_tfxlm")
 script = ExtResource("2_2ysky")
-normal_water_color = Color(0.121569, 0.415686, 0.560784, 1)
-fully_shadowed_water_color = Color(0.0235294, 0.137255, 0.231373, 1)

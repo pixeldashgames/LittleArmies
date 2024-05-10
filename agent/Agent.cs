@@ -29,7 +29,8 @@ readonly struct Troop(
     float height,
     string name,
     bool defenders,
-    int supplies)
+    int supplies,
+    bool positionKnown)
 {
     public Vector2I Position => new(position.Item1, position.Item2);
     public int Troops => troops;
@@ -38,6 +39,7 @@ readonly struct Troop(
     public float Height => height;
     public string Name => name;
     public bool Defenders => defenders;
+    public bool PositionKnown => positionKnown;
     public int Supplies => supplies;
 
     public override bool Equals(object? obj)

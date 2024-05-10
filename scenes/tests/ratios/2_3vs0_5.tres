@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="GameUnitsRatio" load_steps=4 format=3 uid="uid://b7elkpbb0qpcg"]
+
+[ext_resource type="Resource" uid="uid://bqpdsroi2c42k" path="res://scenes/tests/ratios/2_3.tres" id="1_wyvsg"]
+[ext_resource type="Resource" uid="uid://chqvcxdmhdquk" path="res://scenes/tests/ratios/0_5.tres" id="2_8gp1i"]
+[ext_resource type="Script" path="res://scripts/game_units_ratio.gd" id="3_4tmt6"]
+
+[resource]
+script = ExtResource("3_4tmt6")
+attackers_ratio = ExtResource("1_wyvsg")
+defenders_ratio = ExtResource("2_8gp1i")

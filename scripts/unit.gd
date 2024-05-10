@@ -9,12 +9,11 @@ const morale_effect_range = Vector2(0.5, 1)
 const count_effect_range = Vector2(0.5, 1)
 const injured_effect_range = Vector2(0.5, 1)
 
-const max_unit_vigilance := 5.0
-const max_count_that_affects_vigilance := 50
+const max_count_that_affects_vigilance := 20
 const morale_effect_curve_on_vigilance := 0.3
 const count_effect_curve_on_vigilance := 0.2
-const morale_vigilance_effect_range = Vector2(0.1, 1)
-const count_vigilance_effect_range = Vector2(0.2, 1)
+const morale_vigilance_effect_range = Vector2(0.6, 1.25)
+const count_vigilance_effect_range = Vector2(0.7, 1.25)
 
 const max_count_that_affects_visibility := 50
 const count_effect_curve_on_visibility := 3.6
@@ -240,9 +239,8 @@ func get_damage(my_terrain: GameMap.TerrainType, other_unit_terrain: GameMap.Ter
 
 	return [killed, _injured]
 
-func get_vigilance_range() -> float:
-	return max_unit_vigilance \
-		* _lerp_to_range(ease(morale, morale_effect_curve_on_vigilance), 
+func get_visibility_multiplier() -> float:
+	return _lerp_to_range(ease(morale, morale_effect_curve_on_vigilance), 
 			morale_vigilance_effect_range) \
 		* _lerp_to_range(ease(
 			clamp(float(count - injured) / max_count_that_affects_vigilance, 0, 1)

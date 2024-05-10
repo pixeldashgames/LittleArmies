@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="TestConfig" load_steps=11 format=3 uid="uid://cqv8n3tynxmvc"]
+
+[ext_resource type="Resource" uid="uid://b7elkpbb0qpcg" path="res://scenes/tests/ratios/2_3vs0_5.tres" id="1_o1dcl"]
+[ext_resource type="Script" path="res://scripts/test_config.gd" id="1_ua176"]
+[ext_resource type="Resource" uid="uid://dr7flveh5elo7" path="res://scenes/tests/ratios/2_3vs1_4.tres" id="2_d1o5u"]
+[ext_resource type="Resource" uid="uid://dqyk1b2xdr566" path="res://scenes/tests/ratios/2_3vs3_2.tres" id="3_udfof"]
+[ext_resource type="Resource" uid="uid://bom47h3wmi70o" path="res://scenes/tests/ratios/3_2vs0_5.tres" id="4_g8lxq"]
+[ext_resource type="Resource" uid="uid://cmarus5bxjpcq" path="res://scenes/tests/ratios/3_2vs1_4.tres" id="5_n4lod"]
+[ext_resource type="Resource" uid="uid://d0ic1r7c7uurs" path="res://scenes/tests/ratios/3_2vs3_2.tres" id="6_qfhgx"]
+[ext_resource type="Resource" uid="uid://du0orsnnvpdkd" path="res://scenes/tests/ratios/5_0vs0_5.tres" id="7_eidr2"]
+[ext_resource type="Resource" uid="uid://chy5xw51rp8rq" path="res://scenes/tests/ratios/5_0vs1_4.tres" id="8_yumkj"]
+[ext_resource type="Resource" uid="uid://bwdh1aawtoto4" path="res://scenes/tests/ratios/5_0vs3_2.tres" id="9_ltwl2"]
+
+[resource]
+script = ExtResource("1_ua176")
+test_name = "Normal Terrain"
+test_count = 25
+forest_threshold = 0.9
+mountain_threshold = 0.75
+ratios = Array[Resource("res://scripts/game_units_ratio.gd")]([ExtResource("1_o1dcl"), ExtResource("2_d1o5u"), ExtResource("3_udfof"), ExtResource("4_g8lxq"), ExtResource("5_n4lod"), ExtResource("6_qfhgx"), ExtResource("7_eidr2"), ExtResource("8_yumkj"), ExtResource("9_ltwl2")])

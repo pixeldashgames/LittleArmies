@@ -1,0 +1,10 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://hcnct544o3t4"]
+
+[ext_resource type="Shader" path="res://art/shaders/shader_with_visibility.gdshader" id="1_nrrpk"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_nrrpk")
+shader_parameter/albedo = Color(0.192157, 0.227451, 0.247059, 1)
+shader_parameter/max_tint_color = Color(0, 0, 0, 0.866667)
+shader_parameter/metallic = 0.5
